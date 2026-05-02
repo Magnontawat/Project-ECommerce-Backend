@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { getBooks, getBookById } = require('../controllers/bookController');
+const { getBooks, getBookById, addBook, updateBook, deleteBook } = require('../controllers/bookController');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
-// กำหนด Route สำหรับดึงข้อมูลหนังสือทั้งหมด
-// เส้นทางที่เข้ามาที่นี่จะถูกต่อท้ายด้วย /api/books ตามที่กำหนดใน index.js
+// --- Public Routes ---
 router.get('/', getBooks);
-// กำหนด Route สำหรับดึงข้อมูลหนังสือตาม id
-// เส้นทางที่เข้ามาที่นี่จะถูกต่อท้ายด้วย /api/books ตามที่กำหนดใน index.js
 router.get('/:id', getBookById);
+
+// --- Admin Routes (Protected) ---
+router.post('/', protect, adminOnly, addBook);
+router.put('/:id', protect, adminOnly, updateBook);
+router.delete('/:id', protect, adminOnly, deleteBook);
 
 module.exports = router;

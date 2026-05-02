@@ -15,68 +15,6 @@ const seedData = async () => {
 
         console.log('✅ เชื่อมต่อฐานข้อมูลสำเร็จ กำลังเตรียมข้อมูล Mock Data...');
 
-        // สร้างตาราง books ถ้ายังไม่มี
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS books (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                author VARCHAR(255) NOT NULL,
-                price DECIMAL(10, 2) NOT NULL,
-                cover TEXT,
-                category VARCHAR(100),
-                description TEXT,
-                stock INT DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        console.log('✅ ตรวจสอบและสร้างตาราง books เรียบร้อย');
-
-        // สร้างตาราง users ถ้ายังไม่มี
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) UNIQUE NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                role ENUM('buyer', 'admin') DEFAULT 'buyer',
-                level INT DEFAULT 1
-            )
-        `);
-        console.log('✅ ตรวจสอบและสร้างตาราง users เรียบร้อย');
-
-        // สร้างตาราง carts ถ้ายังไม่มี
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS carts (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT UNIQUE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        `);
-        console.log('✅ ตรวจสอบและสร้างตาราง carts เรียบร้อย');
-
-        // สร้างตาราง cart_items ถ้ายังไม่มี
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS cart_items (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                cart_id INT NOT NULL,
-                book_id INT NOT NULL,
-                quantity INT DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
-                FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
-            )
-        `);
-        console.log('✅ ตรวจสอบและสร้างตาราง cart_items เรียบร้อย');
-
-        // ล้างข้อมูลเก่า
-        await connection.query('SET FOREIGN_KEY_CHECKS = 0');
-        await connection.query('TRUNCATE TABLE cart_items');
-        await connection.query('TRUNCATE TABLE carts');
-        await connection.query('TRUNCATE TABLE books');
-        await connection.query('TRUNCATE TABLE users');
-        await connection.query('SET FOREIGN_KEY_CHECKS = 1');
-
         // ข้อมูลตัวอย่าง books
         const mockBooks = [
             {

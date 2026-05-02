@@ -165,6 +165,113 @@
 
 ---
 
+## 5. Add to Cart
+เพิ่มสินค้าลงในตระกร้า (ต้อง Login ก่อน)
+
+- **URL:** `/api/cart/add`
+- **Method:** `POST`
+- **Base URL (Local):** `http://localhost:5000`
+- **Authentication:** `Bearer <token>` (ต้องแนบ Token ใน Header)
+
+### 📥 Request Body (JSON)
+```json
+{
+  "bookId": 1,
+  "quantity": 2
+}
+```
+
+### 📤 Response (200 OK)
+```json
+{
+  "message": "เพิ่มสินค้าลงตระกร้าเรียบร้อย",
+  "cartId": 1,
+  "bookId": 1,
+  "quantity": 2
+}
+```
+
+### ❌ Error Response (กรณีไม่ได้ Login หรือไม่ได้ส่ง bookId)
+**Status:** `401 Unauthorized` / `400 Bad Request`
+```json
+{
+  "message": "ไม่ได้รับอนุญาต (Unauthorized), ไม่พบ Token"
+}
+```
+
+---
+
+## 6. Add New Book (Admin)
+เพิ่มหนังสือใหม่ลงในระบบ (ต้องเป็น Admin เท่านั้น)
+
+- **URL:** `/api/books`
+- **Method:** `POST`
+- **Authentication:** `Bearer <token>` (ต้องเป็น Admin Token)
+
+### 📥 Request Body (JSON)
+```json
+{
+  "title": "New Book Title",
+  "author": "Author Name",
+  "price": 25.00,
+  "cover": "https://example.com/image.jpg",
+  "category": "Fiction",
+  "description": "Book description here...",
+  "stock": 100
+}
+```
+
+### 📤 Response (201 Created)
+```json
+{
+  "message": "เพิ่มหนังสือเรียบร้อยแล้ว",
+  "bookId": 4
+}
+```
+
+---
+
+## 7. Update Book (Admin)
+แก้ไขข้อมูลหนังสือเดิม (ต้องเป็น Admin เท่านั้น)
+
+- **URL:** `/api/books/:id`
+- **Method:** `PUT`
+- **Authentication:** `Bearer <token>` (ต้องเป็น Admin Token)
+
+### 📥 Request Body (JSON)
+ส่งเฉพาะฟิลด์ที่ต้องการแก้ไข
+```json
+{
+  "price": 29.99,
+  "stock": 150
+}
+```
+
+### 📤 Response (200 OK)
+```json
+{
+  "message": "แก้ไขข้อมูลหนังสือเรียบร้อยแล้ว"
+}
+```
+
+---
+
+## 8. Delete Book (Admin)
+ลบหนังสือออกจากระบบ (ต้องเป็น Admin เท่านั้น)
+
+- **URL:** `/api/books/:id`
+- **Method:** `DELETE`
+- **Authentication:** `Bearer <token>` (ต้องเป็น Admin Token)
+
+### 📤 Response (200 OK)
+```json
+{
+  "message": "ลบหนังสือเรียบร้อยแล้ว"
+}
+```
+
+---
+
 ## 💡 วิธีเรียกใช้จากหน้าบ้าน (ตัวอย่าง Code)
 
 หากคุณใช้ `fetch` ใน React/JS:
@@ -193,4 +300,25 @@ const fetchBookDetail = async (id) => {
     console.error('Error fetching book details:', error);
   }
 };
+
+**เพิ่มสินค้าลงตระกร้า (ต้องมี Token):**
+```javascript
+const addToCart = async (bookId, quantity, token) => {
+  try {
+    const response = await fetch('http://localhost:5000/api/cart/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ bookId, quantity })
+    });
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+  }
+};
+```
+
 ```
