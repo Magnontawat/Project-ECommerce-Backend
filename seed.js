@@ -1,11 +1,11 @@
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 // ฟังก์ชันสำหรับรัน Mock Data
 const seedData = async () => {
     let connection;
     try {
-        // สร้างการเชื่อมต่อแบบชั่วคราวสำหรับรันสคริปต์
         connection = await mysql.createConnection({
             host: process.env.DB_HOST,
             user: process.env.DB_USER,
@@ -29,7 +29,23 @@ const seedData = async () => {
         `);
         console.log('✅ ตรวจสอบและสร้างตาราง books เรียบร้อย');
 
-        // ข้อมูลตัวอย่างที่คุณให้มา
+        // สร้างตาราง users ถ้ายังไม่มี
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                role ENUM('buyer', 'admin') DEFAULT 'buyer',
+                level INT DEFAULT 1
+            )
+        `);
+        console.log('✅ ตรวจสอบและสร้างตาราง users เรียบร้อย');
+
+        // ล้างข้อมูลเก่า
+        await connection.query('TRUNCATE TABLE books');
+        await connection.query('TRUNCATE TABLE users');
+
+        // ข้อมูลตัวอย่าง books
         const mockBooks = [
             {
                 title: "The Weight of Ink",
@@ -57,23 +73,32 @@ const seedData = async () => {
             }
         ];
 
-        // ทำการล้างข้อมูลเก่าในตาราง (ถ้าต้องการ) เพื่อไม่ให้ข้อมูลซ้ำ
-        // await connection.query('TRUNCATE TABLE books');
-
-        // วนลูปยัดข้อมูลลงในตาราง
         for (const book of mockBooks) {
             await connection.query(
                 'INSERT INTO books (title, author, price, cover, category, description) VALUES (?, ?, ?, ?, ?, ?)',
                 [book.title, book.author, book.price, book.cover, book.category, book.description]
             );
         }
-
         console.log(`🎉 เพิ่มข้อมูลหนังสือตัวอย่างสำเร็จจำนวน ${mockBooks.length} เล่ม!`);
+
+        // ข้อมูลตัวอย่าง users
+        const hashedPassword = await bcrypt.hash('password123', 10);
+        const mockUsers = [
+            { username: 'admin', password: hashedPassword, role: 'admin', level: 99 },
+            { username: 'buyer1', password: hashedPassword, role: 'buyer', level: 1 }
+        ];
+
+        for (const user of mockUsers) {
+            await connection.query(
+                'INSERT INTO users (username, password, role, level) VALUES (?, ?, ?, ?)',
+                [user.username, user.password, user.role, user.level]
+            );
+        }
+        console.log(`🎉 เพิ่มข้อมูลผู้ใช้งานตัวอย่างสำเร็จจำนวน ${mockUsers.length} คน!`);
 
     } catch (error) {
         console.error('❌ เกิดข้อผิดพลาด:', error.message);
     } finally {
-        // ปิดการเชื่อมต่อเสมอไม่ว่าจะสำเร็จหรือเกิดข้อผิดพลาด
         if (connection) {
             await connection.end();
             console.log('🔒 ปิดการเชื่อมต่อฐานข้อมูลแล้ว');
@@ -82,5 +107,4 @@ const seedData = async () => {
     }
 };
 
-// รันฟังก์ชัน
 seedData();

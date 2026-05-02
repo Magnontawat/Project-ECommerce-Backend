@@ -101,6 +101,70 @@
 
 ---
 
+## 3. Register User
+สมัครสมาชิกใหม่ โดยระบบจะตั้งค่าเริ่มต้นให้เป็น Role `buyer` และ Level `1` เสมอ
+
+- **URL:** `/api/auth/register`
+- **Method:** `POST`
+- **Base URL (Local):** `http://localhost:5000`
+
+### 📥 Request Body (JSON)
+```json
+{
+  "username": "newuser",
+  "password": "mypassword123"
+}
+```
+
+### 📤 Response (201 Created)
+```json
+{
+  "id": 3,
+  "username": "newuser",
+  "role": "buyer",
+  "level": 1,
+  "token": "eyJhbGciOiJIUzI1NiIsInR..."
+}
+```
+
+---
+
+## 4. Login User
+เข้าสู่ระบบเพื่อรับ Token สำหรับนำไปใช้ยืนยันตัวตนในระบบ
+
+- **URL:** `/api/auth/login`
+- **Method:** `POST`
+- **Base URL (Local):** `http://localhost:5000`
+
+### 📥 Request Body (JSON)
+```json
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+### 📤 Response (200 OK)
+```json
+{
+  "id": 1,
+  "username": "admin",
+  "role": "admin",
+  "level": 99,
+  "token": "eyJhbGciOiJIUzI1NiIsInR..."
+}
+```
+
+### ❌ Error Response (กรณีรหัสผิดหรือหา user ไม่เจอ)
+**Status:** `401 Unauthorized`
+```json
+{
+  "message": "Username หรือ Password ไม่ถูกต้อง"
+}
+```
+
+---
+
 ## 💡 วิธีเรียกใช้จากหน้าบ้าน (ตัวอย่าง Code)
 
 หากคุณใช้ `fetch` ใน React/JS:
