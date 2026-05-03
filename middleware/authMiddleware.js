@@ -8,10 +8,10 @@ const protect = (req, res, next) => {
         try {
             // ดึง Token ออกจาก header (Bearer <token>)
             token = req.headers.authorization.split(' ')[1];
-            console.log("Token", token);
+
             // ถอดรหัส (Verify) Token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            console.log("Protect decoded ผ่านแล้ว", decoded);
+
             // เก็บข้อมูล user (ที่อยู่ใน token) ลงใน req.user เพื่อให้ controller อื่นๆ ใช้งานต่อได้
             req.user = decoded;
             next();
@@ -28,7 +28,7 @@ const protect = (req, res, next) => {
 
 // Middleware สำหรับตรวจสอบ Role ว่าเป็น Admin หรือไม่
 const adminOnly = (req, res, next) => {
-    if (req.user && req.user.role === 'buyer') {
+    if (req.user && req.user.role === 'admin') {
         next();
     } else {
         res.status(403).json({ message: 'สิทธิ์การเข้าถึงถูกปฏิเสธ: เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น' });
