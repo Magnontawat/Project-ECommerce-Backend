@@ -64,5 +64,5 @@ INSERT INTO books (title, author, price, cover, category, description, stock) VA
 
 -- เพิ่มข้อมูลตัวอย่าง users (รหัสผ่านคือ password123 เข้ารหัสผ่าน bcrypt)
 INSERT INTO users (username, email, password, role, level) VALUES
-('admin', 'admin@example.com', '$2a$10$Xm30u/t7V3k/wG./L7q28u/X8mU6y728v4oM1q5H6wXz0K.nQoB2a', 'admin', 99),
-('buyer1', 'buyer1@example.com', '$2a$10$Xm30u/t7V3k/wG./L7q28u/X8mU6y728v4oM1q5H6wXz0K.nQoB2a', 'buyer', 1);
+('admin', 'admin@example.com', '$2b$10$1GagAGuq75NHiBcQftdXE.ijA9nfsNkIEPycXDZt5ubpyT8FpFawm', 'admin', 99),
+('buyer1', 'buyer1@example.com', '$2b$10$1GagAGuq75NHiBcQftdXE.ijA9nfsNkIEPycXDZt5ubpyT8FpFawm', 'buyer', 1);
