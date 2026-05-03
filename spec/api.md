@@ -74,19 +74,17 @@
 
 **Example Response:**
 ```json
-[
-  {
-    "id": 1,
-    "title": "The Weight of Ink",
-    "author": "Rachel Kadish",
-    "price": "24.00",
-    "cover": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80",
-    "category": "Historical Fiction",
-    "description": "A sweeping historical narrative set in London of the 1660s and of the early twenty-first century."
-  }
-]
+{
+  "id": 1,
+  "title": "The Weight of Ink",
+  "author": "Rachel Kadish",
+  "price": "24.00",
+  "cover": "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80",
+  "category": "Historical Fiction",
+  "description": "A sweeping historical narrative set in London of the 1660s and of the early twenty-first century."
+}
 ```
-*(หมายเหตุ: ปัจจุบัน API ส่งค่ากลับมาเป็น Array แม้จะมีแค่ 1 เล่ม เนื่องจากรูปแบบของ mysql2 `query`)*
+*(หมายเหตุ: API ส่งค่ากลับมาเป็น Object ชุดเดียว)*
 
 ### ❌ Error Response (กรณีเชื่อมต่อ DB ไม่ได้หรือเซิร์ฟเวอร์มีปัญหา)
 **Status:** `500 Internal Server Error`
@@ -111,6 +109,7 @@
 ### 📥 Request Body (JSON)
 ```json
 {
+  "email": "user@example.com",
   "username": "newuser",
   "password": "mypassword123"
 }
@@ -120,12 +119,21 @@
 ```json
 {
   "id": 3,
+  "email": "user@example.com",
   "username": "newuser",
   "role": "buyer",
   "level": 1,
   "token": "eyJhbGciOiJIUzI1NiIsInR..."
 }
 ```
+
+### ❌ Error Response
+**Status:** `400 Bad Request`
+- กรณีส่งข้อมูลไม่ครบ: `{ "message": "กรุณากรอก Email, Username และ Password ให้ครบถ้วน" }`
+- กรณี Email ซ้ำ: `{ "message": "Email นี้ถูกใช้งานแล้ว" }`
+
+**Status:** `500 Internal Server Error`
+- `{ "message": "เกิดข้อผิดพลาดในการสมัครสมาชิก" }`
 
 ---
 
@@ -139,7 +147,7 @@
 ### 📥 Request Body (JSON)
 ```json
 {
-  "username": "admin",
+  "email": "admin@example.com",
   "password": "password123"
 }
 ```
@@ -155,13 +163,15 @@
 }
 ```
 
-### ❌ Error Response (กรณีรหัสผิดหรือหา user ไม่เจอ)
+### ❌ Error Response
+**Status:** `400 Bad Request`
+- กรณีส่งข้อมูลไม่ครบ: `{ "message": "กรุณากรอก Email และ Password ให้ครบถ้วน" }`
+
 **Status:** `401 Unauthorized`
-```json
-{
-  "message": "Username หรือ Password ไม่ถูกต้อง"
-}
-```
+- กรณีรหัสผิดหรือหา Email ไม่เจอ: `{ "message": "Email หรือ Password ไม่ถูกต้อง" }`
+
+**Status:** `500 Internal Server Error`
+- `{ "message": "เกิดข้อผิดพลาดในการเข้าสู่ระบบ" }`
 
 ---
 
@@ -295,7 +305,7 @@ const fetchBookDetail = async (id) => {
   try {
     const response = await fetch(`http://localhost:5000/api/books/${id}`);
     const data = await response.json();
-    console.log(data[0]); // นำข้อมูลไปใช้ต่อ (data เป็น array จึงต้องเข้าถึง index 0)
+    console.log(data); // นำข้อมูลไปใช้ต่อ (data เป็น object)
   } catch (error) {
     console.error('Error fetching book details:', error);
   }
