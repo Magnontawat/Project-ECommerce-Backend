@@ -67,10 +67,12 @@ const loginUser = async (req, res) => {
         // ค้นหา user ตาม email
         const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
 
+        //ถ้าไม่เจอ
         if (users.length === 0) {
             return res.status(401).json({ message: 'Email หรือ Password ไม่ถูกต้อง' });
         }
 
+        //เลือกอันแรก
         const user = users[0];
 
         // ตรวจสอบความถูกต้องของ password
