@@ -1,29 +1,45 @@
+/**
+ * controllers/cartController.js — จัดการตะกร้าสินค้า
+ *
+ * ไฟล์นี้มี 1 Controller:
+ *   1. addToCart — เพิ่มสินค้า (Variant) ลงในตะกร้าของผู้ใช้
+ *
+ * หมายเหตุ: ฟีเจอร์ Cart ยังอยู่ระหว่างพัฒนา
+ * ปัจจุบัน Endpoint นี้ไม่ได้อยู่ใน API Spec หลัก (api.md)
+ */
+
 const CartService = require('../services/cartService');
 
-// @desc    Add item to cart
-// @route   POST /api/cart/add
-// @access  Private (User must be logged in)
+/**
+ * addToCart — เพิ่ม Variant ของหนังสือลงในตะกร้า
+ *
+ * @route  POST /api/cart/add
+ * @access Private (ต้อง Login ก่อน)
+ *
+ * Request Body: { variantId, quantity }
+ *   variantId  — ID ของ book_variants (ไม่ใช่ book ID)
+ *   quantity   — จำนวนที่ต้องการเพิ่ม (default 1)
+ *
+ * ถ้า Variant นั้นอยู่ในตะกร้าแล้ว จะบวกจำนวนเพิ่ม
+ * ถ้ายังไม่มี จะเพิ่มแถวใหม่ในตะกร้า
+ */
 const addToCart = async (req, res) => {
     try {
-        const { bookId, quantity } = req.body;
-        const userId = req.user.id; // ได้มาจาก protect middleware
+        const { variantId, quantity } = req.body;
+        const userId = req.user.id; // ได้มาจาก protect middleware (อยู่ใน JWT Token)
 
-        if (!bookId) {
-            return res.status(400).json({ message: 'กรุณาระบุ bookId' });
+        if (!variantId) {
+            return res.status(400).json({ message: 'กรุณาระบุ variantId' });
         }
 
-        const result = await CartService.addToCart(userId, bookId, quantity || 1);
-
-        console.log("แก้ได้แล้ววววว", result);
+        const result = await CartService.addToCart(userId, variantId, quantity || 1);
 
         res.status(200).json(result);
 
     } catch (error) {
         console.error('Add to cart error:', error);
-        res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตระกร้า' });
+        res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า' });
     }
 };
 
-module.exports = {
-    addToCart
-};
+module.exports = { addToCart };

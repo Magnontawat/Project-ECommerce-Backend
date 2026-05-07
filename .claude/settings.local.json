@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"require\\('multer'\\)\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"c:\\\\Users\\\\USER\\\\Desktop\\\\Project-ECommerce-Backend\\\\uploads\\\\covers\")",
+      "Bash(node index.js)",
+      "Bash(curl -s http://localhost:5000/)",
+      "Bash(curl -s http://localhost:5000/api/books)",
+      "Bash(python3 -m json.tool)",
+      "Bash(pkill -f \"node index.js\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@example.com\",\"password\":\"password123\"}')"
+    ]
+  }
+}
