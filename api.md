@@ -12,15 +12,13 @@
 
 ## สารบัญ
 
-| #   | Endpoint             | Method   | Auth     | คำอธิบาย              |
-| --- | -------------------- | -------- | -------- | --------------------- |
-| 1   | `/api/auth/register` | POST     | ❌       | สมัครสมาชิก           |
-| 2   | `/api/auth/login`    | POST     | ❌       | เข้าสู่ระบบ           |
-| 3   | `/api/books`         | GET      | ❌       | ดึงหนังสือทั้งหมด     |
-| 4   | `/api/books/:id`     | GET      | ❌       | ดึงหนังสือตาม ID      |
-| 5   | `/api/books`         | POST     | ✅ Admin | เพิ่มหนังสือใหม่      |
-| 6   | `/api/books/:id`     | PUT      | ✅ Admin | แก้ไขข้อมูลหนังสือ    |
-| 7   | `/api/books/:id`     | DELETE   | ✅ Admin | ลบหนังสือ             |
+| #   | Endpoint             | Method | Auth     | คำอธิบาย          |
+| --- | -------------------- | ------ | -------- | ----------------- |
+| 1   | `/api/auth/register` | POST   | ❌       | สมัครสมาชิก       |
+| 2   | `/api/auth/login`    | POST   | ❌       | เข้าสู่ระบบ       |
+| 3   | `/api/books`         | GET    | ❌       | ดึงหนังสือทั้งหมด |
+| 4   | `/api/books/:id`     | GET    | ❌       | ดึงหนังสือตาม ID  |
+| 5   | `/api/books`         | POST   | ✅ Admin | เพิ่มหนังสือใหม่  |
 
 ---
 
@@ -134,12 +132,16 @@
     "publish_year": 2017,
     "genre": "historical",
     "synopsis": "A sweeping historical narrative set in London of the 1660s.",
-    "cover_image_url": "http://localhost:5000/uploads/covers/cover-1234567890.jpg",
-    "created_at": "2025-01-01T00:00:00.000Z",
+    "cover_image_url": "https://example.com/covers/the-weight-of-ink.jpg",
     "variants": [
-      { "id": 1, "book_id": 1, "type": "th",    "price": "320.00", "stock": 50  },
-      { "id": 2, "book_id": 1, "type": "en",    "price": "450.00", "stock": 30  },
-      { "id": 3, "book_id": 1, "type": "ebook", "price": "149.00", "stock": 999 }
+      { "id": 1, "book_id": 1, "type": "th", "price": "320.00", "stock": 50 },
+      {
+        "id": 2,
+        "book_id": 1,
+        "type": "ebook",
+        "price": "149.00",
+        "stock": 999
+      }
     ]
   }
 ]
@@ -175,10 +177,9 @@
   "publish_year": 2017,
   "genre": "historical",
   "synopsis": "A sweeping historical narrative set in London of the 1660s.",
-  "cover_image_url": "http://localhost:5000/uploads/covers/cover-1234567890.jpg",
-  "created_at": "2025-01-01T00:00:00.000Z",
+  "cover_image_url": "https://example.com/covers/the-weight-of-ink.jpg",
   "variants": [
-    { "id": 1, "book_id": 1, "type": "th",    "price": "320.00", "stock": 50  },
+    { "id": 1, "book_id": 1, "type": "th", "price": "320.00", "stock": 50 },
     { "id": 2, "book_id": 1, "type": "ebook", "price": "149.00", "stock": 999 }
   ]
 }
@@ -237,8 +238,8 @@
 
 ```json
 [
-  { "type": "th",    "price": 320, "stock": 50  },
-  { "type": "en",    "price": 450, "stock": 30  },
+  { "type": "th", "price": 320, "stock": 50 },
+  { "type": "en", "price": 450, "stock": 30 },
   { "type": "ebook", "price": 149, "stock": 999 }
 ]
 ```
@@ -251,33 +252,35 @@
 
 > **หมายเหตุ:** `type` ต้องไม่ซ้ำกันภายใน 1 หนังสือ และต้องมีอย่างน้อย 1 variant
 
-#### ตัวอย่างการส่งจาก Frontend (JavaScript)
+#### ตัวอย่างการส่งจาก Frontend (วิธีที่ใช้จริงในโปรเจกต์)
+
+Frontend ใช้ `createBook()` จาก `src/services/bookService.js`  
+โดย Authorization header ถูกแนบอัตโนมัติผ่าน Axios interceptor ใน `src/services/api.js`
 
 ```javascript
-const data = new FormData();
-data.append("title", "The Name of the Wind");
-data.append("author", "Patrick Rothfuss");
-data.append("publisher", "DAW Books");
-data.append("publish_year", 2007);
-data.append("genre", "fantasy");
-data.append("synopsis", "เรื่องราวของ Kvothe นักเวทย์ผู้เป็นตำนาน...");
-data.append(
-  "variants",
-  JSON.stringify([
-    { type: "th",    price: 350, stock: 100 },
-    { type: "ebook", price: 199, stock: 999 },
-  ]),
-);
-data.append("cover_image", file); // File object จาก <input type="file">
+// src/pages/AddProductPage.jsx
+const data = new FormData()
+data.append("title", form.title)
+data.append("author", form.author)
+data.append("publisher", form.publisher)
+data.append("publish_year", form.publishYear)  // state key ชื่อ publishYear แต่ส่งเป็น publish_year
+data.append("genre", form.genre)
+data.append("synopsis", form.synopsis)
+data.append("variants", JSON.stringify(variants))  // แปลง array → JSON string ก่อน append
+if (coverFile) data.append("cover_image", coverFile)  // File object จาก <input type="file">
 
-const response = await fetch("http://localhost:5000/api/books", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${token}`,
-    // ไม่ต้องใส่ Content-Type เอง — browser จะ set multipart boundary ให้อัตโนมัติ
-  },
-  body: data,
-});
+await createBook(data)  // createBook ใน bookService.js จัดการ header และ token ให้อัตโนมัติ
+```
+
+```javascript
+// src/services/bookService.js — createBook implementation
+export async function createBook(formData) {
+  const response = await api.post('/books', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    // Authorization: Bearer <token> ถูกแนบโดย interceptor ใน api.js อัตโนมัติ
+  })
+  return response.data
+}
 ```
 
 ### 📤 Response `201 Created`
@@ -293,11 +296,22 @@ const response = await fetch("http://localhost:5000/api/books", {
     "publish_year": 2007,
     "genre": "fantasy",
     "synopsis": "เรื่องราวของ Kvothe นักเวทย์ผู้เป็นตำนาน...",
-    "cover_image_url": "http://localhost:5000/uploads/covers/cover-1234567890.jpg",
-    "created_at": "2025-05-05T09:00:00.000Z",
+    "cover_image_url": "https://example.com/covers/the-name-of-the-wind.jpg",
     "variants": [
-      { "id": 20, "book_id": 10, "type": "th",    "price": "350.00", "stock": 100 },
-      { "id": 21, "book_id": 10, "type": "ebook", "price": "199.00", "stock": 999 }
+      {
+        "id": 20,
+        "book_id": 10,
+        "type": "th",
+        "price": "350.00",
+        "stock": 100
+      },
+      {
+        "id": 21,
+        "book_id": 10,
+        "type": "ebook",
+        "price": "199.00",
+        "stock": 999
+      }
     ]
   }
 }
@@ -310,174 +324,36 @@ const response = await fetch("http://localhost:5000/api/books", {
 | `400`  | ข้อมูลไม่ครบ / variants ไม่ถูกต้อง | `"กรุณากรอกข้อมูลที่จำเป็นให้ครบ"`  |
 | `401`  | ไม่มี Token หรือ Token หมดอายุ     | `"กรุณาเข้าสู่ระบบก่อน"`            |
 | `403`  | Role ไม่ใช่ admin                  | `"คุณไม่มีสิทธิ์ดำเนินการนี้"`      |
+| `409`  | ชื่อหนังสือซ้ำกัน (ถ้า implement)  | `"หนังสือชื่อนี้มีอยู่ในระบบแล้ว"`  |
 | `500`  | Server / DB error                  | `"เกิดข้อผิดพลาดในการเพิ่มหนังสือ"` |
 
 ---
 
-## 6. Update Book — Admin Only (แก้ไขข้อมูลหนังสือ)
-
-- **URL:** `PUT /api/books/:id`
-- **Auth:** ✅ ต้องการ `Bearer Token` และ `role === "admin"`
-- **Content-Type:** `multipart/form-data`
-
-### 📥 Request
-
-| Parameter  | Type   | Required | คำอธิบาย      |
-| ---------- | ------ | -------- | ------------- |
-| `id` (URL) | number | ✅       | ID ของหนังสือ |
-
-Body fields เหมือนกับ **Create Book (#5)** ทุกประการ แต่ทุก field เป็น **Optional**  
-(ส่งเฉพาะ field ที่ต้องการแก้ไข — field ที่ไม่ส่งจะใช้ค่าเดิม)
-
-> **หมายเหตุสำหรับ `variants`:** ถ้าส่ง `variants` มา ระบบจะ **แทนที่ variants ทั้งหมด** ของหนังสือนั้น
-
-#### ตัวอย่างการส่งจาก Frontend (JavaScript)
-
-```javascript
-const data = new FormData();
-data.append("synopsis", "เรื่องย่อที่แก้ไขใหม่...");
-data.append(
-  "variants",
-  JSON.stringify([
-    { type: "th",    price: 399, stock: 80 },
-    { type: "ebook", price: 179, stock: 999 },
-  ]),
-);
-// ถ้าต้องการเปลี่ยนรูปปกด้วย:
-// data.append("cover_image", newFile);
-
-const response = await fetch(`http://localhost:5000/api/books/${bookId}`, {
-  method: "PUT",
-  headers: { Authorization: `Bearer ${token}` },
-  body: data,
-});
-```
-
-### 📤 Response `200 OK`
-
-```json
-{
-  "message": "แก้ไขข้อมูลหนังสือสำเร็จ",
-  "book": {
-    "id": 10,
-    "title": "The Name of the Wind",
-    "author": "Patrick Rothfuss",
-    "publisher": "DAW Books",
-    "publish_year": 2007,
-    "genre": "fantasy",
-    "synopsis": "เรื่องย่อที่แก้ไขใหม่...",
-    "cover_image_url": "http://localhost:5000/uploads/covers/cover-1234567890.jpg",
-    "created_at": "2025-05-05T09:00:00.000Z",
-    "variants": [
-      { "id": 30, "book_id": 10, "type": "th",    "price": "399.00", "stock": 80  },
-      { "id": 31, "book_id": 10, "type": "ebook", "price": "179.00", "stock": 999 }
-    ]
-  }
-}
-```
-
-### ❌ Error Responses
-
-| Status | เงื่อนไข                       | `message` ตัวอย่าง                    |
-| ------ | ------------------------------ | ------------------------------------- |
-| `400`  | variants format ไม่ถูกต้อง     | `"รูปแบบ variants ไม่ถูกต้อง"`        |
-| `401`  | ไม่มี Token หรือ Token หมดอายุ | `"กรุณาเข้าสู่ระบบก่อน"`              |
-| `403`  | Role ไม่ใช่ admin              | `"คุณไม่มีสิทธิ์ดำเนินการนี้"`        |
-| `404`  | ไม่พบหนังสือ                   | `"ไม่พบหนังสือที่ต้องการแก้ไข"`       |
-| `500`  | Server / DB error              | `"เกิดข้อผิดพลาดในการแก้ไขข้อมูลหนังสือ"` |
-
----
-
-## 7. Delete Book — Admin Only (ลบหนังสือ)
-
-- **URL:** `DELETE /api/books/:id`
-- **Auth:** ✅ ต้องการ `Bearer Token` และ `role === "admin"`
-
-### 📥 Request
-
-| Parameter  | Type   | Required | คำอธิบาย      |
-| ---------- | ------ | -------- | ------------- |
-| `id` (URL) | number | ✅       | ID ของหนังสือ |
-
-ไม่ต้องส่ง Body
-
-### 📤 Response `200 OK`
-
-```json
-{
-  "message": "ลบหนังสือสำเร็จ"
-}
-```
-
-> **หมายเหตุ:** `book_variants` ของหนังสือนั้นจะถูกลบโดยอัตโนมัติ (ON DELETE CASCADE)
-
-### ❌ Error Responses
-
-| Status | เงื่อนไข                       | `message` ตัวอย่าง              |
-| ------ | ------------------------------ | -------------------------------- |
-| `401`  | ไม่มี Token หรือ Token หมดอายุ | `"กรุณาเข้าสู่ระบบก่อน"`        |
-| `403`  | Role ไม่ใช่ admin              | `"คุณไม่มีสิทธิ์ดำเนินการนี้"`  |
-| `404`  | ไม่พบหนังสือ                   | `"ไม่พบหนังสือที่ต้องการลบ"`    |
-| `500`  | Server / DB error              | `"เกิดข้อผิดพลาดในการลบหนังสือ"` |
-
----
-
-## 🗄️ โครงสร้างฐานข้อมูล
+## 🗄️ โครงสร้างฐานข้อมูลที่แนะนำ
 
 ### ตาราง `books`
 
-| Column            | Type                                                                             | Notes                                  |
-| ----------------- | -------------------------------------------------------------------------------- | -------------------------------------- |
-| `id`              | INT PK AUTO_INCREMENT                                                            |                                        |
-| `title`           | VARCHAR(255)                                                                     | NOT NULL                               |
-| `author`          | VARCHAR(255)                                                                     | NOT NULL                               |
-| `publisher`       | VARCHAR(255)                                                                     | NULLABLE                               |
-| `publish_year`    | INT                                                                              | NULLABLE                               |
-| `genre`           | ENUM('fantasy','romance','thriller','mystery','horror','sci-fi','historical','adventure','drama','comedy','young-adult','literary','action','BL','GL','other') | NOT NULL DEFAULT 'other' |
-| `synopsis`        | TEXT                                                                             | NULLABLE                               |
-| `cover_image_url` | TEXT                                                                             | URL จาก `/uploads/covers/`             |
-| `created_at`      | TIMESTAMP                                                                        | DEFAULT CURRENT_TIMESTAMP              |
+| Column            | Type                  | Notes                      |
+| ----------------- | --------------------- | -------------------------- |
+| `id`              | INT PK AUTO_INCREMENT |                            |
+| `title`           | VARCHAR(255)          | NOT NULL                   |
+| `author`          | VARCHAR(255)          | NOT NULL                   |
+| `publisher`       | VARCHAR(255)          | NULLABLE                   |
+| `publish_year`    | INT                   | NULLABLE                   |
+| `genre`           | VARCHAR(50)           | NOT NULL                   |
+| `synopsis`        | TEXT                  | NULLABLE                   |
+| `cover_image_url` | TEXT                  | URL ของรูปปกที่อัปโหลดแล้ว |
+| `created_at`      | DATETIME              | DEFAULT NOW()              |
 
 ### ตาราง `book_variants`
 
-| Column    | Type                    | Notes                          |
-| --------- | ----------------------- | ------------------------------ |
-| `id`      | INT PK AUTO_INCREMENT   |                                |
-| `book_id` | INT FK → `books.id`     | ON DELETE CASCADE              |
-| `type`    | ENUM('th','en','ebook') | NOT NULL                       |
-| `price`   | DECIMAL(10,2)           | NOT NULL                       |
-| `stock`   | INT                     | NOT NULL, DEFAULT 0            |
-|           | UNIQUE(book_id, type)   | ห้ามมี type ซ้ำใน book เดียวกัน |
-
-### ตาราง `users`
-
-| Column     | Type                  | Notes                     |
-| ---------- | --------------------- | ------------------------- |
-| `id`       | INT PK AUTO_INCREMENT |                           |
-| `username` | VARCHAR(255)          | UNIQUE NOT NULL           |
-| `email`    | VARCHAR(255)          | UNIQUE NOT NULL           |
-| `password` | VARCHAR(255)          | bcrypt hash               |
-| `role`     | ENUM('user','admin')  | DEFAULT 'user'            |
-| `level`    | INT                   | DEFAULT 1                 |
-| `created_at` | TIMESTAMP           | DEFAULT CURRENT_TIMESTAMP |
-
-### ตาราง `carts`
-
-| Column     | Type                  | Notes                            |
-| ---------- | --------------------- | -------------------------------- |
-| `id`       | INT PK AUTO_INCREMENT |                                  |
-| `user_id`  | INT FK → `users.id`   | UNIQUE, ON DELETE CASCADE        |
-| `created_at` | TIMESTAMP           | DEFAULT CURRENT_TIMESTAMP        |
-
-### ตาราง `cart_items`
-
-| Column       | Type                        | Notes                        |
-| ------------ | --------------------------- | ---------------------------- |
-| `id`         | INT PK AUTO_INCREMENT       |                              |
-| `cart_id`    | INT FK → `carts.id`         | ON DELETE CASCADE            |
-| `variant_id` | INT FK → `book_variants.id` | ON DELETE CASCADE            |
-| `quantity`   | INT                         | NOT NULL, DEFAULT 1          |
-| `created_at` | TIMESTAMP                   | DEFAULT CURRENT_TIMESTAMP    |
+| Column    | Type                    | Notes               |
+| --------- | ----------------------- | ------------------- |
+| `id`      | INT PK AUTO_INCREMENT   |                     |
+| `book_id` | INT FK → `books.id`     | ON DELETE CASCADE   |
+| `type`    | ENUM('th','en','ebook') | NOT NULL            |
+| `price`   | DECIMAL(10,2)           | NOT NULL            |
+| `stock`   | INT                     | NOT NULL, DEFAULT 0 |
 
 ---
 
@@ -496,13 +372,40 @@ Middleware ควรแนบข้อมูล user ไว้ใน `req.user` 
 
 ## 📁 การจัดการไฟล์รูปภาพ (Cover Image)
 
-Backend ใช้ **Multer** รับไฟล์จาก `multipart/form-data` field ชื่อ `cover_image`
+Backend ควรใช้ **Multer** รับไฟล์จาก `multipart/form-data` และเลือก storage strategy ดังนี้:
 
-| Option     | คำอธิบาย                                                                        |
-| ---------- | ------------------------------------------------------------------------------- |
-| **Local**  | บันทึกใน `/uploads/covers/` แล้วส่ง URL กลับ เช่น `http://localhost:5000/uploads/covers/filename.jpg` |
-| **Cloud**  | อัปโหลดไปยัง S3 / Cloudinary แล้วส่ง URL เต็มกลับ                               |
+| Option            | คำอธิบาย                                                                        |
+| ----------------- | ------------------------------------------------------------------------------- |
+| **Local storage** | บันทึกใน `/uploads/covers/` แล้วส่ง URL กลับเช่น `/uploads/covers/filename.jpg` |
+| **Cloud storage** | อัปโหลดไปยัง S3 / Cloudinary แล้วส่ง URL เต็มกลับ                               |
 
-- ขนาดไฟล์สูงสุด: **5 MB**
-- นามสกุลที่รองรับ: `.jpg`, `.jpeg`, `.png`, `.webp`
-- Frontend ต้องการเพียง `cover_image_url` (string URL) เพื่อแสดงรูปในหน้าเว็บ
+Frontend ต้องการเพียง `cover_image_url` (string URL) เพื่อแสดงรูปในหน้าเว็บ
+
+---
+
+## 📋 Frontend Field Mapping
+
+ตารางนี้สรุป field ที่ Frontend ใช้จริงสำหรับแต่ละ component เพื่อให้ Backend ส่งข้อมูลได้ถูกต้อง
+
+### `GET /api/books` และ `GET /api/books/:id` — Fields ที่ Frontend ใช้
+
+| Frontend Component | Field ที่ใช้ | ตรงกับ API field |
+|---|---|---|
+| `BookCard.jsx` | `book.cover_image_url` | `cover_image_url` ✅ |
+| `BookCard.jsx` | `book.variants[0].price` | `variants[].price` ✅ |
+| `BookDetailPage.jsx` | `book.cover_image_url` | `cover_image_url` ✅ |
+| `BookDetailPage.jsx` | `book.genre` | `genre` ✅ |
+| `BookDetailPage.jsx` | `book.synopsis` | `synopsis` ✅ |
+| `BookDetailPage.jsx` | `book.variants[0].price` | `variants[].price` ✅ |
+
+> **หมายเหตุ:** BookDetailPage ยังไม่มี UI เลือก variant — แสดงราคาจาก `variants[0]` เป็น default
+
+---
+
+## 📅 Changelog
+
+| วันที่ | รายการ |
+|---|---|
+| 2026-05-07 | สร้างไฟล์ spec เวอร์ชันแรก |
+| 2026-05-07 | ตรวจสอบ spec กับ code จริง — พบและแก้ไข: `BookCard` และ `BookDetailPage` ใช้ field ผิด (`cover`, `category`, `description`, `price` flat) แก้เป็น `cover_image_url`, `genre`, `synopsis`, `variants[].price` |
+| 2026-05-07 | อัปเดต JS example ใน Create Book ให้ตรงกับ code จริง (ใช้ `createBook()` + Axios interceptor แทน raw `fetch`) |
