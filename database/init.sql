@@ -23,6 +23,8 @@ CREATE DATABASE IF NOT EXISTS bababook_db
 USE bababook_db;
 
 -- ล้างตารางเก่า (เรียงตาม FK: ลูกก่อน แม่หลัง)
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS cart_items;
 DROP TABLE IF EXISTS carts;
 DROP TABLE IF EXISTS book_variants;
@@ -88,7 +90,6 @@ CREATE TABLE carts (
     user_id    INT UNIQUE NOT NULL, -- UNIQUE = แต่ละ User มีตะกร้าได้แค่ 1 ใบ
     created_at TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
 
-    -- เมื่อลบ User → ลบตะกร้าของ User นั้นด้วย
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -102,11 +103,39 @@ CREATE TABLE cart_items (
     quantity   INT NOT NULL DEFAULT 1,
     created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
-    -- เมื่อลบตะกร้า → ลบรายการสินค้าในตะกร้านั้นด้วย
     FOREIGN KEY (cart_id)    REFERENCES carts(id)         ON DELETE CASCADE,
-
-    -- เมื่อลบ variant → ลบรายการสินค้าที่อ้างอิง variant นั้นด้วย
     FOREIGN KEY (variant_id) REFERENCES book_variants(id) ON DELETE CASCADE
+);
+
+-- =============================================================
+-- ตาราง orders — คำสั่งซื้อ
+-- =============================================================
+-- 1 คำสั่งซื้อ = 1 แถวใน orders + หลายแถวใน order_items
+-- status: pending=รอดำเนินการ, paid=ชำระแล้ว, cancelled=ยกเลิก
+CREATE TABLE orders (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT                                  NOT NULL,
+    status      ENUM('pending','paid','cancelled')   NOT NULL DEFAULT 'pending',
+    total_price DECIMAL(10, 2)                       NOT NULL, -- ยอดรวมทั้งหมด ณ เวลาสั่งซื้อ
+    created_at  TIMESTAMP                            DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- =============================================================
+-- ตาราง order_items — รายการสินค้าในคำสั่งซื้อ
+-- =============================================================
+-- price_at_purchase เก็บราคา ณ วันที่สั่งซื้อ เพราะราคา variant อาจเปลี่ยนในภายหลัง
+CREATE TABLE order_items (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    order_id          INT            NOT NULL,
+    variant_id        INT            NOT NULL,
+    quantity          INT            NOT NULL,
+    price_at_purchase DECIMAL(10, 2) NOT NULL, -- snapshot ราคา ณ วันที่สั่งซื้อ
+
+    FOREIGN KEY (order_id)   REFERENCES orders(id)        ON DELETE CASCADE,
+    -- RESTRICT: ห้ามลบ variant ถ้ายังมีประวัติคำสั่งซื้ออยู่ (ป้องกันข้อมูลเสียหาย)
+    FOREIGN KEY (variant_id) REFERENCES book_variants(id) ON DELETE RESTRICT
 );
 
 SET FOREIGN_KEY_CHECKS = 1; -- เปิดการตรวจสอบ FK กลับคืน
@@ -120,10 +149,11 @@ SET FOREIGN_KEY_CHECKS = 1; -- เปิดการตรวจสอบ FK ก
 -- (hash ด้วย bcrypt rounds=10)
 INSERT INTO users (username, email, password, role, level) VALUES
 ('admin', 'admin@example.com', '$2b$10$1GagAGuq75NHiBcQftdXE.ijA9nfsNkIEPycXDZt5ubpyT8FpFawm', 'admin', 99),
-('user1', 'user1@example.com', '$2b$10$1GagAGuq75NHiBcQftdXE.ijA9nfsNkIEPycXDZt5ubpyT8FpFawm', 'user',  1);
+('user1', 'user1@example.com', '$2b$10$1GagAGuq75NHiBcQftdXE.ijA9nfsNkIEPycXDZt5ubpyT8FpFawm', 'user',   1);
 
 -- ── Books ───────────────────────────────────────────────────
 INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cover_image_url) VALUES
+-- book_id 1
 (
     'The Weight of Ink',
     'Rachel Kadish',
@@ -133,6 +163,7 @@ INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cove
     'A sweeping historical narrative set in London of the 1660s and of the early twenty-first century.',
     'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80'
 ),
+-- book_id 2
 (
     'A Little Life',
     'Hanya Yanagihara',
@@ -142,6 +173,7 @@ INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cove
     'A novel about the lives of four college friends navigating friendship, loss, and trauma in New York City.',
     'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&q=80'
 ),
+-- book_id 3
 (
     'Pachinko',
     'Min Jin Lee',
@@ -150,22 +182,88 @@ INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cove
     'historical',
     'A multi-generational saga of a Korean family who eventually migrate to Japan, spanning nearly a century.',
     'https://images.unsplash.com/photo-1629992101753-56d196c8aabb?w=400&q=80'
+),
+-- book_id 4
+(
+    'The Name of the Wind',
+    'Patrick Rothfuss',
+    'DAW Books',
+    2007,
+    'fantasy',
+    'The story of Kvothe — a legendary wizard and musician who grows from a poor troupe performer to the most notorious wizard his world has ever seen.',
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80'
+),
+-- book_id 5
+(
+    'The Fault in Our Stars',
+    'John Green',
+    'Dutton Books',
+    2012,
+    'romance',
+    'Two teenagers, Hazel and Augustus, meet in a cancer support group and fall in love, embarking on a journey that is both funny and heartbreaking.',
+    'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400&q=80'
+),
+-- book_id 6
+(
+    'Gone Girl',
+    'Gillian Flynn',
+    'Crown Publishers',
+    2012,
+    'thriller',
+    'On their fifth anniversary, Nick Dunne''s wife Amy mysteriously disappears. As the media descends, the evidence begins to point directly at Nick.',
+    'https://images.unsplash.com/photo-1476275466078-4cdc8bd9e5e4?w=400&q=80'
 );
 
 -- ── Book Variants ───────────────────────────────────────────
--- book_id 1: The Weight of Ink
+-- variant_id 1-3: The Weight of Ink
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
-(1, 'th',    320.00, 50),
-(1, 'en',    450.00, 30),
+(1, 'th',    320.00,  50),
+(1, 'en',    450.00,  30),
 (1, 'ebook', 149.00, 999);
 
--- book_id 2: A Little Life
+-- variant_id 4-5: A Little Life
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
-(2, 'th',    280.00, 40),
+(2, 'th',    280.00,  40),
 (2, 'ebook', 129.00, 999);
 
--- book_id 3: Pachinko
+-- variant_id 6-8: Pachinko
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
-(3, 'th',    299.00, 35),
-(3, 'en',    420.00, 20),
+(3, 'th',    299.00,  35),
+(3, 'en',    420.00,  20),
 (3, 'ebook', 139.00, 999);
+
+-- variant_id 9-11: The Name of the Wind
+INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(4, 'th',    350.00,  45),
+(4, 'en',    480.00,  25),
+(4, 'ebook', 169.00, 999);
+
+-- variant_id 12-13: The Fault in Our Stars
+INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(5, 'th',    260.00,  60),
+(5, 'ebook', 119.00, 999);
+
+-- variant_id 14-16: Gone Girl
+INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(6, 'th',    310.00,  35),
+(6, 'en',    430.00,  15),
+(6, 'ebook', 159.00, 999);
+
+-- ── Cart (user1) ────────────────────────────────────────────
+-- สร้างตะกร้าให้ user1 (user_id=2) และเพิ่มสินค้าตัวอย่าง
+-- ใช้สำหรับทดสอบ GET /api/cart โดยไม่ต้อง add เอง
+INSERT INTO carts (user_id) VALUES (2); -- cart_id = 1
+
+INSERT INTO cart_items (cart_id, variant_id, quantity) VALUES
+(1, 4,  1),  -- A Little Life (th) x1
+(1, 11, 2);  -- The Name of the Wind (ebook) x2
+
+-- ── Orders (user1) ──────────────────────────────────────────
+-- ประวัติคำสั่งซื้อตัวอย่างสำหรับทดสอบ Order History
+-- order_id = 1: คำสั่งซื้อที่ชำระแล้ว
+INSERT INTO orders (user_id, status, total_price) VALUES
+(2, 'paid', 737.00); -- 320.00 + 139.00*3 = 737.00
+
+INSERT INTO order_items (order_id, variant_id, quantity, price_at_purchase) VALUES
+(1, 1, 1, 320.00),  -- The Weight of Ink (th) x1 @ 320 บาท
+(1, 8, 3, 139.00);  -- Pachinko (ebook) x3 @ 139 บาท

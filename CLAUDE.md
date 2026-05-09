@@ -14,7 +14,7 @@ Database: MySQL ผ่าน XAMPP (`bababook_db`)
 
 ---
 
-## สถานะปัจจุบัน (2026-05-07)
+## สถานะปัจจุบัน (2026-05-09)
 
 ### ✅ Implemented (ทำแล้ว ทดสอบผ่าน)
 
@@ -28,9 +28,22 @@ Database: MySQL ผ่าน XAMPP (`bababook_db`)
 | 6 | `/api/books/:id` | PUT | Admin |
 | 7 | `/api/books/:id` | DELETE | Admin |
 
-### 🚧 In Progress (อยู่ระหว่างพัฒนา)
+### 🚧 In Progress (โค้ดพร้อม ยังไม่ได้ test)
 
-- `POST /api/cart/add` — Cart feature ยังไม่สมบูรณ์ ยังไม่ได้ test
+| # | Endpoint | Method | Auth |
+|---|---|---|---|
+| 8 | `/api/cart/add` | POST | User |
+
+### 📋 Planned (DB พร้อม รอ implement)
+
+| # | Endpoint | Method | Auth | หมายเหตุ |
+|---|---|---|---|---|
+| 9 | `/api/cart` | GET | User | ดึงตะกร้าพร้อมข้อมูล book+variant |
+| 10 | `/api/cart/items/:id` | DELETE | User | ลบรายการออกจากตะกร้า |
+| 11 | `/api/cart/items/:id` | PUT | User | แก้ไขจำนวนในตะกร้า |
+| 12 | `/api/orders` | POST | User | Checkout — สร้าง order จาก cart |
+| 13 | `/api/orders` | GET | User | ดึงประวัติคำสั่งซื้อ |
+| 14 | `/api/orders/:id` | GET | User | ดูรายละเอียด order |
 
 ---
 
@@ -112,6 +125,24 @@ uploads/covers/       ← รูปปกหนังสือที่อัพ
 | quantity | INT NOT NULL DEFAULT 1 | |
 | created_at | TIMESTAMP | |
 
+### `orders`
+| Column | Type | Notes |
+|---|---|---|
+| id | INT PK AUTO_INCREMENT | |
+| user_id | INT FK → users.id | ON DELETE CASCADE |
+| status | ENUM('pending','paid','cancelled') | default 'pending' |
+| total_price | DECIMAL(10,2) NOT NULL | ยอดรวม ณ เวลาสั่งซื้อ |
+| created_at | TIMESTAMP | |
+
+### `order_items`
+| Column | Type | Notes |
+|---|---|---|
+| id | INT PK AUTO_INCREMENT | |
+| order_id | INT FK → orders.id | ON DELETE CASCADE |
+| variant_id | INT FK → book_variants.id | ON DELETE RESTRICT |
+| quantity | INT NOT NULL | |
+| price_at_purchase | DECIMAL(10,2) NOT NULL | snapshot ราคา ณ วันสั่งซื้อ |
+
 ---
 
 ## Key Design Decisions
@@ -120,6 +151,9 @@ uploads/covers/       ← รูปปกหนังสือที่อัพ
 - JWT Token อายุ 30 วัน, เก็บ payload: `{ id, username, role, level }`
 - `protect` middleware → ตรวจ Token → เก็บไว้ใน `req.user`
 - `adminOnly` middleware → ต้องใช้ต่อจาก `protect` เสมอ
+- `role` มีค่าเป็น `"user"` หรือ `"admin"` เท่านั้น (ไม่มี `"buyer"`)
+- Email ซ้ำ / Username ซ้ำ → `409 Conflict` (ไม่ใช่ `400`)
+- Login email ไม่พบ → `404`, password ผิด → `401`
 
 ### File Upload (Cover Image)
 - Multer diskStorage → บันทึกที่ `uploads/covers/`
@@ -130,12 +164,23 @@ uploads/covers/       ← รูปปกหนังสือที่อัพ
 ### Book Variants
 - 1 Book มีหลาย Variant (th, en, ebook)
 - ราคาและ stock แยกกันต่อ Variant
+- `addBook` และ `updateBook` ใช้ `multipart/form-data` (ไม่ใช่ JSON) เพราะต้องรองรับการอัพโหลดรูป
+- `variants` ส่งมาเป็น **JSON string** ใน form field (ต้อง `JSON.stringify` ฝั่ง Frontend)
 - `addBook` ใช้ Transaction: Insert book → Insert variants พร้อมกัน
+- `updateBook` variants: ถ้าส่งมาจะ **ลบของเดิมทั้งหมดแล้วแทนด้วยชุดใหม่**
+- GET /api/books และ GET /api/books/:id ส่งกลับ `variants[]` array ติดมาด้วยเสมอ
 
 ### Cart
+- Request ส่ง `variantId` (ID ของ `book_variants`) ไม่ใช่ `bookId`
 - `cart_items.variant_id` อ้างอิง `book_variants.id` (ไม่ใช่ `books.id`)
 - 1 User = 1 Cart (UNIQUE constraint บน `carts.user_id`)
 - `getOrCreateCart` สร้าง Cart อัตโนมัติถ้ายังไม่มี
+- Upsert behavior: ถ้า variant นั้นอยู่ในตะกร้าแล้ว → **บวกจำนวน** (ไม่ใช่ replace)
+
+### Orders
+- `order_items.price_at_purchase` เก็บ snapshot ราคา ณ วันที่สั่งซื้อ ป้องกันราคาเปลี่ยนทำให้ประวัติผิด
+- `variant_id` ใช้ `ON DELETE RESTRICT` — ห้ามลบ variant ถ้ายังมี order อ้างอิงอยู่
+- `total_price` ใน orders คือยอดรวมที่คำนวณตอน checkout (ไม่ได้คำนวณ real-time จาก order_items)
 
 ---
 
@@ -152,12 +197,50 @@ JWT_SECRET=supersecretkeybababook2026
 
 ---
 
-## Seed Accounts
+## Seed Data
+
+### Accounts
 
 | Email | Password | Role | Level |
 |---|---|---|---|
 | admin@example.com | password123 | admin | 99 |
 | user1@example.com | password123 | user | 1 |
+
+### Books (6 เล่ม, หลากหลาย genre)
+
+| book_id | Title | Genre | Variants |
+|---|---|---|---|
+| 1 | The Weight of Ink | historical | th, en, ebook |
+| 2 | A Little Life | literary | th, ebook |
+| 3 | Pachinko | historical | th, en, ebook |
+| 4 | The Name of the Wind | fantasy | th, en, ebook |
+| 5 | The Fault in Our Stars | romance | th, ebook |
+| 6 | Gone Girl | thriller | th, en, ebook |
+
+### Variant IDs (อ้างอิงตอนทดสอบ Cart)
+
+| variant_id | Book | Type | Price |
+|---|---|---|---|
+| 1 | The Weight of Ink | th | 320 |
+| 2 | The Weight of Ink | en | 450 |
+| 3 | The Weight of Ink | ebook | 149 |
+| 4 | A Little Life | th | 280 |
+| 5 | A Little Life | ebook | 129 |
+| 6 | Pachinko | th | 299 |
+| 7 | Pachinko | en | 420 |
+| 8 | Pachinko | ebook | 139 |
+| 9 | The Name of the Wind | th | 350 |
+| 10 | The Name of the Wind | en | 480 |
+| 11 | The Name of the Wind | ebook | 169 |
+| 12 | The Fault in Our Stars | th | 260 |
+| 13 | The Fault in Our Stars | ebook | 119 |
+| 14 | Gone Girl | th | 310 |
+| 15 | Gone Girl | en | 430 |
+| 16 | Gone Girl | ebook | 159 |
+
+### Cart & Orders ของ user1 (seed)
+- **cart_id 1**: มี A Little Life (th) x1 + The Name of the Wind (ebook) x2
+- **order_id 1** (paid): The Weight of Ink (th) x1 + Pachinko (ebook) x3 = 737 บาท
 
 ---
 
@@ -181,4 +264,4 @@ curl http://localhost:5000/api/books
 
 ## API Spec
 
-รายละเอียด Request/Response ครบถ้วนอยู่ใน [api.md](api.md)
+รายละเอียด Request/Response ครบถ้วนอยู่ใน [spec/api.md](spec/api.md)
