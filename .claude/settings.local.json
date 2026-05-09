@@ -8,7 +8,10 @@
       "Bash(curl -s http://localhost:5000/api/books)",
       "Bash(python3 -m json.tool)",
       "Bash(pkill -f \"node index.js\")",
-      "Bash(curl -s -X POST http://localhost:5000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@example.com\",\"password\":\"password123\"}')"
+      "Bash(curl -s -X POST http://localhost:5000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@example.com\",\"password\":\"password123\"}')",
+      "Bash(Get-Content \"c:\\\\Users\\\\USER\\\\Desktop\\\\Project-ECommerce-Backend\\\\database\\\\init.sql\")",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT id, book_id, type, price, stock FROM bababook_db.book_variants ORDER BY id;\" 2>&1)"
     ]
   }
 }

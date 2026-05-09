@@ -73,7 +73,7 @@ CREATE TABLE book_variants (
     book_id INT                      NOT NULL,
     type    ENUM('th','en','ebook')   NOT NULL, -- th=ภาษาไทย, en=ภาษาอังกฤษ, ebook=ดิจิทัล
     price   DECIMAL(10, 2)           NOT NULL,
-    stock   INT                      NOT NULL DEFAULT 0,
+    stock   INT                      NULL DEFAULT 0,
 
     -- ป้องกันไม่ให้หนังสือเล่มเดียวกันมี type ซ้ำ เช่น มี 2 ฉบับภาษาไทย
     UNIQUE KEY uq_book_variant (book_id, type),
@@ -219,35 +219,35 @@ INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cove
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
 (1, 'th',    320.00,  50),
 (1, 'en',    450.00,  30),
-(1, 'ebook', 149.00, 999);
+(1, 'ebook', 149.00, NULL);
 
 -- variant_id 4-5: A Little Life
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
 (2, 'th',    280.00,  40),
-(2, 'ebook', 129.00, 999);
+(2, 'ebook', 129.00, NULL);
 
 -- variant_id 6-8: Pachinko
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
 (3, 'th',    299.00,  35),
 (3, 'en',    420.00,  20),
-(3, 'ebook', 139.00, 999);
+(3, 'ebook', 139.00, NULL);
 
 -- variant_id 9-11: The Name of the Wind
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
 (4, 'th',    350.00,  45),
 (4, 'en',    480.00,  25),
-(4, 'ebook', 169.00, 999);
+(4, 'ebook', 169.00, NULL);
 
 -- variant_id 12-13: The Fault in Our Stars
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
 (5, 'th',    260.00,  60),
-(5, 'ebook', 119.00, 999);
+(5, 'ebook', 119.00, NULL);
 
 -- variant_id 14-16: Gone Girl
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
 (6, 'th',    310.00,  35),
 (6, 'en',    430.00,  15),
-(6, 'ebook', 159.00, 999);
+(6, 'ebook', 159.00, NULL);
 
 -- ── Cart (user1) ────────────────────────────────────────────
 -- สร้างตะกร้าให้ user1 (user_id=2) และเพิ่มสินค้าตัวอย่าง

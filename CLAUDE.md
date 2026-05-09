@@ -16,7 +16,7 @@ Database: MySQL ผ่าน XAMPP (`bababook_db`)
 
 ## สถานะปัจจุบัน (2026-05-09)
 
-### ✅ Implemented (ทำแล้ว ทดสอบผ่าน)
+### ✅ Implemented (ทำแล้ว — ครบทุก Endpoint)
 
 | # | Endpoint | Method | Auth |
 |---|---|---|---|
@@ -27,23 +27,13 @@ Database: MySQL ผ่าน XAMPP (`bababook_db`)
 | 5 | `/api/books` | POST | Admin |
 | 6 | `/api/books/:id` | PUT | Admin |
 | 7 | `/api/books/:id` | DELETE | Admin |
-
-### 🚧 In Progress (โค้ดพร้อม ยังไม่ได้ test)
-
-| # | Endpoint | Method | Auth |
-|---|---|---|---|
 | 8 | `/api/cart/add` | POST | User |
-
-### 📋 Planned (DB พร้อม รอ implement)
-
-| # | Endpoint | Method | Auth | หมายเหตุ |
-|---|---|---|---|---|
-| 9 | `/api/cart` | GET | User | ดึงตะกร้าพร้อมข้อมูล book+variant |
-| 10 | `/api/cart/items/:id` | DELETE | User | ลบรายการออกจากตะกร้า |
-| 11 | `/api/cart/items/:id` | PUT | User | แก้ไขจำนวนในตะกร้า |
-| 12 | `/api/orders` | POST | User | Checkout — สร้าง order จาก cart |
-| 13 | `/api/orders` | GET | User | ดึงประวัติคำสั่งซื้อ |
-| 14 | `/api/orders/:id` | GET | User | ดูรายละเอียด order |
+| 9 | `/api/cart` | GET | User |
+| 10 | `/api/cart/items/:id` | DELETE | User |
+| 11 | `/api/cart/items/:id` | PUT | User |
+| 12 | `/api/orders` | POST | User |
+| 13 | `/api/orders` | GET | User |
+| 14 | `/api/orders/:id` | GET | User |
 
 ---
 
@@ -58,13 +48,15 @@ middleware/
 controllers/
   authController.js   ← register + login
   bookController.js   ← getBooks, getBookById, addBook, updateBook, deleteBook
-  cartController.js   ← addToCart
+  cartController.js   ← addToCart, getCart, removeCartItem, updateCartItem
+  orderController.js  ← createOrder, getOrders, getOrderById
 services/
   cartService.js      ← getOrCreateCart, addToCart
 routes/
   authRoutes.js       ← /api/auth/*
   bookRoutes.js       ← /api/books/*
   cart.js             ← /api/cart/*
+  orderRoutes.js      ← /api/orders/*
 database/
   init.sql            ← Schema + Seed (authoritative, ใช้สำหรับ fresh setup)
 seed.js               ← Reseed script (รัน node seed.js)
@@ -106,7 +98,7 @@ uploads/covers/       ← รูปปกหนังสือที่อัพ
 | book_id | INT FK → books.id | ON DELETE CASCADE |
 | type | ENUM('th','en','ebook') NOT NULL | |
 | price | DECIMAL(10,2) NOT NULL | |
-| stock | INT NOT NULL DEFAULT 0 | |
+| stock | INT NULL DEFAULT 0 | ebook = null (ไม่จำกัด), th/en = ตัวเลขจริง |
 | (unique) | (book_id, type) | ห้ามซ้ำ type ในเล่มเดียวกัน |
 
 ### `carts`

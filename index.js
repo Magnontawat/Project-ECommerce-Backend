@@ -14,9 +14,10 @@ const path    = require('path');
 require('dotenv').config(); // โหลดค่าจากไฟล์ .env เข้าสู่ process.env
 
 // --- Import Routes ---
-const bookRoutes = require('./routes/bookRoutes');
-const authRoutes = require('./routes/authRoutes');
-const cartRoutes = require('./routes/cart');
+const bookRoutes  = require('./routes/bookRoutes');
+const authRoutes  = require('./routes/authRoutes');
+const cartRoutes  = require('./routes/cart');
+const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 
@@ -52,14 +53,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes — แต่ละ Group ของ API Endpoint
 // ─────────────────────────────────────────────
 
-// Endpoint ทุกตัวที่ขึ้นต้นด้วย /api/books จะถูกส่งไปจัดการที่ bookRoutes
+// Endpoint ทุกตัวที่ขึ้นต้นด้วย /api/....
 app.use('/api/books', bookRoutes);
-
-// Endpoint ทุกตัวที่ขึ้นต้นด้วย /api/auth จะถูกส่งไปจัดการที่ authRoutes
 app.use('/api/auth', authRoutes);
-
-// Endpoint ทุกตัวที่ขึ้นต้นด้วย /api/cart จะถูกส่งไปจัดการที่ cartRoutes
 app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
 
 // ─────────────────────────────────────────────
 // Health Check Endpoint

@@ -24,15 +24,15 @@ const { protect, adminOnly } = require('../middleware/authMiddleware');
 const upload   = require('../middleware/upload');
 
 // ─── Public Routes (ไม่ต้องการ Token) ───────────────
-router.get('/',    getBooks);      // GET /api/books
+router.get('/', getBooks);      // GET /api/books
 router.get('/:id', getBookById);   // GET /api/books/:id
 
 // ─── Admin Routes (ต้องการ Token + Admin Role) ───────
 // POST /api/books — เพิ่มหนังสือใหม่ (รับไฟล์รูปภาพด้วย)
-router.post('/',    protect, adminOnly, upload.single('cover_image'), addBook);
+router.post('/', protect, adminOnly, upload.single('cover_image'), addBook);
 
 // PUT /api/books/:id — แก้ไขหนังสือ (รับไฟล์รูปภาพด้วย)
-router.put('/:id',  protect, adminOnly, upload.single('cover_image'), updateBook);
+router.put('/:id', protect, adminOnly, upload.single('cover_image'), updateBook);
 
 // DELETE /api/books/:id — ลบหนังสือ
 router.delete('/:id', protect, adminOnly, deleteBook);

@@ -175,8 +175,11 @@ const addBook = async (req, res) => {
         if (typesSeen.has(v.type)) {
             return res.status(400).json({ message: `ประเภท variant ซ้ำกัน: "${v.type}"` });
         }
-        if (v.price === undefined || v.price === null || v.stock === undefined) {
-            return res.status(400).json({ message: `variant "${v.type}" ต้องมี price และ stock` });
+        if (v.price === undefined || v.price === null) {
+            return res.status(400).json({ message: `variant "${v.type}" ต้องมี price` });
+        }
+        if (v.type !== 'ebook' && (v.stock == null || isNaN(Number(v.stock)))) {
+            return res.status(400).json({ message: `variant "${v.type}" ต้องมี stock` });
         }
         typesSeen.add(v.type);
     }
@@ -202,7 +205,7 @@ const addBook = async (req, res) => {
 
         // Insert Variants ทั้งหมดในครั้งเดียว (Batch Insert)
         // variantRows = [[bookId, "th", 320, 50], [bookId, "ebook", 149, 999]]
-        const variantRows = variants.map((v) => [bookId, v.type, v.price, v.stock ?? 0]);
+        const variantRows = variants.map((v) => [bookId, v.type, v.price, v.type === 'ebook' ? (v.stock ?? null) : v.stock]);
         await conn.query(
             'INSERT INTO book_variants (book_id, type, price, stock) VALUES ?',
             [variantRows]
@@ -305,7 +308,7 @@ const updateBook = async (req, res) => {
             // ON DELETE CASCADE จะจัดการ FK ให้อัตโนมัติ
             await conn.query('DELETE FROM book_variants WHERE book_id = ?', [id]);
             if (variants.length > 0) {
-                const variantRows = variants.map((v) => [id, v.type, v.price, v.stock ?? 0]);
+                const variantRows = variants.map((v) => [id, v.type, v.price, v.type === 'ebook' ? (v.stock ?? null) : v.stock]);
                 await conn.query(
                     'INSERT INTO book_variants (book_id, type, price, stock) VALUES ?',
                     [variantRows]
