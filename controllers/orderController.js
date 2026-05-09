@@ -1,29 +1,45 @@
+/**
+ * controllers/orderController.js
+ *
+ * createOrder  — สร้าง order จาก cart ปัจจุบัน แล้วล้าง cart  (POST /api/orders)
+ * getOrders    — ดึงประวัติ order ทั้งหมดของ user              (GET  /api/orders)
+ * getOrderById — ดึงรายละเอียด order ตาม ID                    (GET  /api/orders/:id)
+ */
+
 const db = require('../config/db');
 
+// ─── Create Order ─────────────────────────────────────────────────────────────
+
+/**
+ * @route  POST /api/orders
+ * @access User
+ *
+ * ใช้ Transaction เพื่อให้ทุกขั้นตอน (สร้าง order, insert items, ล้าง cart)
+ * สำเร็จหรือล้มเหลวพร้อมกันทั้งหมด ป้องกันข้อมูลไม่สมบูรณ์
+ */
 const createOrder = async (req, res) => {
     const userId = req.user.id;
-    const conn = await db.getConnection();
+    const conn   = await db.getConnection();
+
     try {
         await conn.beginTransaction();
 
-        // ดึง cart items พร้อมราคา variant ปัจจุบัน
-        const [cart] = await conn.query(
-            'SELECT id FROM carts WHERE user_id = ?',
-            [userId]
-        );
+        // 1. หา cart ของ user
+        const [cart] = await conn.query('SELECT id FROM carts WHERE user_id = ?', [userId]);
         if (cart.length === 0) {
             await conn.rollback();
             return res.status(400).json({ message: 'ตะกร้าของคุณว่างเปล่า' });
         }
         const cartId = cart[0].id;
 
+        // 2. ดึง cart items พร้อมราคา variant ปัจจุบัน
         const [items] = await conn.query(
             `SELECT ci.id AS cartItemId, ci.quantity,
                     bv.id AS variantId, bv.type, bv.price,
-                    b.id AS bookId, b.title, b.author, b.cover_image_url
+                    b.id  AS bookId, b.title, b.author, b.cover_image_url
              FROM cart_items ci
              JOIN book_variants bv ON bv.id = ci.variant_id
-             JOIN books b ON b.id = bv.book_id
+             JOIN books b          ON b.id  = bv.book_id
              WHERE ci.cart_id = ?`,
             [cartId]
         );
@@ -33,36 +49,39 @@ const createOrder = async (req, res) => {
             return res.status(400).json({ message: 'ตะกร้าของคุณว่างเปล่า' });
         }
 
+        // 3. คำนวณยอดรวม
         const totalPrice = items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
 
+        // 4. สร้าง order
         const [orderResult] = await conn.query(
             'INSERT INTO orders (user_id, status, total_price) VALUES (?, "pending", ?)',
             [userId, totalPrice]
         );
         const orderId = orderResult.insertId;
 
+        // 5. บันทึก order items — price_at_purchase เก็บ snapshot ราคา ณ วันสั่งซื้อ
         const orderItemRows = items.map((item) => [orderId, item.variantId, item.quantity, item.price]);
         await conn.query(
             'INSERT INTO order_items (order_id, variant_id, quantity, price_at_purchase) VALUES ?',
             [orderItemRows]
         );
 
-        // ล้าง cart items หลัง checkout สำเร็จ
+        // 6. ล้าง cart หลัง checkout สำเร็จ
         await conn.query('DELETE FROM cart_items WHERE cart_id = ?', [cartId]);
 
         await conn.commit();
 
+        // 7. ดึงข้อมูลล่าสุดเพื่อส่งกลับ
         const [newOrderItems] = await conn.query(
             `SELECT oi.id, oi.quantity, oi.price_at_purchase,
                     bv.id AS variantId, bv.type,
-                    b.id AS bookId, b.title, b.author, b.cover_image_url
+                    b.id  AS bookId, b.title, b.author, b.cover_image_url
              FROM order_items oi
              JOIN book_variants bv ON bv.id = oi.variant_id
-             JOIN books b ON b.id = bv.book_id
+             JOIN books b          ON b.id  = bv.book_id
              WHERE oi.order_id = ?`,
             [orderId]
         );
-
         const [order] = await conn.query(
             'SELECT id, status, total_price, created_at FROM orders WHERE id = ?',
             [orderId]
@@ -73,15 +92,14 @@ const createOrder = async (req, res) => {
             order: {
                 ...order[0],
                 items: newOrderItems.map((oi) => ({
-                    id: oi.id,
-                    quantity: oi.quantity,
+                    id:                oi.id,
+                    quantity:          oi.quantity,
                     price_at_purchase: oi.price_at_purchase,
                     variant: { id: oi.variantId, type: oi.type },
-                    book: { id: oi.bookId, title: oi.title, author: oi.author, cover_image_url: oi.cover_image_url },
+                    book:    { id: oi.bookId, title: oi.title, author: oi.author, cover_image_url: oi.cover_image_url },
                 })),
             },
         });
-
     } catch (error) {
         await conn.rollback();
         console.error('Create order error:', error);
@@ -91,8 +109,15 @@ const createOrder = async (req, res) => {
     }
 };
 
+// ─── Get Order History ────────────────────────────────────────────────────────
+
+/**
+ * @route  GET /api/orders
+ * @access User
+ */
 const getOrders = async (req, res) => {
     const userId = req.user.id;
+
     try {
         const [orders] = await db.query(
             `SELECT o.id, o.status, o.total_price, o.created_at,
@@ -111,14 +136,22 @@ const getOrders = async (req, res) => {
     }
 };
 
+// ─── Get Order Detail ─────────────────────────────────────────────────────────
+
+/**
+ * @route  GET /api/orders/:id
+ * @access User
+ */
 const getOrderById = async (req, res) => {
-    const userId = req.user.id;
+    const userId  = req.user.id;
     const orderId = req.params.id;
+
     try {
         const [orders] = await db.query(
             'SELECT id, status, total_price, created_at FROM orders WHERE id = ? AND user_id = ?',
             [orderId, userId]
         );
+
         if (orders.length === 0) {
             return res.status(404).json({ message: 'ไม่พบคำสั่งซื้อ' });
         }
@@ -126,10 +159,10 @@ const getOrderById = async (req, res) => {
         const [items] = await db.query(
             `SELECT oi.id, oi.quantity, oi.price_at_purchase,
                     bv.id AS variantId, bv.type,
-                    b.id AS bookId, b.title, b.author, b.cover_image_url
+                    b.id  AS bookId, b.title, b.author, b.cover_image_url
              FROM order_items oi
              JOIN book_variants bv ON bv.id = oi.variant_id
-             JOIN books b ON b.id = bv.book_id
+             JOIN books b          ON b.id  = bv.book_id
              WHERE oi.order_id = ?`,
             [orderId]
         );
@@ -137,11 +170,11 @@ const getOrderById = async (req, res) => {
         res.status(200).json({
             ...orders[0],
             items: items.map((oi) => ({
-                id: oi.id,
-                quantity: oi.quantity,
+                id:                oi.id,
+                quantity:          oi.quantity,
                 price_at_purchase: oi.price_at_purchase,
                 variant: { id: oi.variantId, type: oi.type },
-                book: { id: oi.bookId, title: oi.title, author: oi.author, cover_image_url: oi.cover_image_url },
+                book:    { id: oi.bookId, title: oi.title, author: oi.author, cover_image_url: oi.cover_image_url },
             })),
         });
     } catch (error) {

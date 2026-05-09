@@ -47,6 +47,7 @@ CREATE TABLE users (
 -- =============================================================
 -- ตาราง books — ข้อมูลหนังสือ
 -- =============================================================
+
 CREATE TABLE books (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     title           VARCHAR(255) NOT NULL,
@@ -60,6 +61,7 @@ CREATE TABLE books (
                     ) NOT NULL DEFAULT 'other',
     synopsis        TEXT         NULL,       -- เรื่องย่อ (optional)
     cover_image_url TEXT         NULL,       -- URL รูปปก (เก็บหลังจากอัพโหลดไฟล์แล้ว)
+    is_active       TINYINT(1)   NOT NULL DEFAULT 1, -- 1=แสดง, 0=ซ่อน (soft delete)
     created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -68,6 +70,7 @@ CREATE TABLE books (
 -- =============================================================
 -- หนังสือ 1 เล่ม มีได้หลาย variant เช่น ฉบับภาษาไทย, ภาษาอังกฤษ, eBook
 -- แต่ละ variant มีราคาและสต็อกแยกกัน
+
 CREATE TABLE book_variants (
     id      INT AUTO_INCREMENT PRIMARY KEY,
     book_id INT                      NOT NULL,
@@ -151,7 +154,7 @@ INSERT INTO users (username, email, password, role, level) VALUES
 ('admin', 'admin@example.com', '$2b$10$1GagAGuq75NHiBcQftdXE.ijA9nfsNkIEPycXDZt5ubpyT8FpFawm', 'admin', 99),
 ('user1', 'user1@example.com', '$2b$10$1GagAGuq75NHiBcQftdXE.ijA9nfsNkIEPycXDZt5ubpyT8FpFawm', 'user',   1);
 
--- ── Books ───────────────────────────────────────────────────
+-- ── Books (10 เล่ม) ─────────────────────────────────────────
 INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cover_image_url) VALUES
 -- book_id 1
 (
@@ -190,7 +193,7 @@ INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cove
     'DAW Books',
     2007,
     'fantasy',
-    'The story of Kvothe — a legendary wizard and musician who grows from a poor troupe performer to the most notorious wizard his world has ever seen.',
+    'The story of Kvothe, a legendary wizard who grows from a poor troupe performer to the most notorious wizard his world has ever seen.',
     'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80'
 ),
 -- book_id 5
@@ -212,42 +215,100 @@ INSERT INTO books (title, author, publisher, publish_year, genre, synopsis, cove
     'thriller',
     'On their fifth anniversary, Nick Dunne''s wife Amy mysteriously disappears. As the media descends, the evidence begins to point directly at Nick.',
     'https://images.unsplash.com/photo-1476275466078-4cdc8bd9e5e4?w=400&q=80'
+),
+-- book_id 7
+(
+    'Dune',
+    'Frank Herbert',
+    'Chilton Books',
+    1965,
+    'sci-fi',
+    'Set in the distant future amidst a feudal interstellar society, Dune tells the story of Paul Atreides as his family accepts stewardship of the desert planet Arrakis.',
+    'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&q=80'
+),
+-- book_id 8
+(
+    'It',
+    'Stephen King',
+    'Viking Press',
+    1986,
+    'horror',
+    'A terrifying clown named Pennywise haunts the town of Derry, Maine, preying on children every 27 years. A group of childhood friends must face their darkest fears to stop it.',
+    'https://images.unsplash.com/photo-1509266272358-7701da638078?w=400&q=80'
+),
+-- book_id 9
+(
+    'The Alchemist',
+    'Paulo Coelho',
+    'HarperCollins',
+    1988,
+    'adventure',
+    'A young Andalusian shepherd named Santiago travels from Spain to Egypt in search of treasure, discovering along the way the importance of following one''s dreams.',
+    'https://images.unsplash.com/photo-1465929639680-64ee080eb3ed?w=400&q=80'
+),
+-- book_id 10
+(
+    'Norwegian Wood',
+    'Haruki Murakami',
+    'Kodansha',
+    1987,
+    'literary',
+    'A nostalgic story of loss and sexuality, following Toru Watanabe as he looks back on his days as a college student living in Tokyo in the late 1960s.',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80'
 );
 
 -- ── Book Variants ───────────────────────────────────────────
--- variant_id 1-3: The Weight of Ink
+-- stock = NULL สำหรับ ebook (ไม่จำกัดจำนวน)
+--
+-- variant_id 1-3:   The Weight of Ink      (th, en, ebook)
+-- variant_id 4-5:   A Little Life          (th, ebook)
+-- variant_id 6-8:   Pachinko               (th, en, ebook)
+-- variant_id 9-11:  The Name of the Wind   (th, en, ebook)
+-- variant_id 12-13: The Fault in Our Stars (th, ebook)
+-- variant_id 14-16: Gone Girl              (th, en, ebook)
+-- variant_id 17-19: Dune                   (th, en, ebook)
+-- variant_id 20-21: It                     (th, ebook)
+-- variant_id 22-24: The Alchemist          (th, en, ebook)
+-- variant_id 25-27: Norwegian Wood         (th, en, ebook)
+
 INSERT INTO book_variants (book_id, type, price, stock) VALUES
+-- The Weight of Ink (book_id 1)
 (1, 'th',    320.00,  50),
 (1, 'en',    450.00,  30),
-(1, 'ebook', 149.00, NULL);
-
--- variant_id 4-5: A Little Life
-INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(1, 'ebook', 149.00, NULL),
+-- A Little Life (book_id 2)
 (2, 'th',    280.00,  40),
-(2, 'ebook', 129.00, NULL);
-
--- variant_id 6-8: Pachinko
-INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(2, 'ebook', 129.00, NULL),
+-- Pachinko (book_id 3)
 (3, 'th',    299.00,  35),
 (3, 'en',    420.00,  20),
-(3, 'ebook', 139.00, NULL);
-
--- variant_id 9-11: The Name of the Wind
-INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(3, 'ebook', 139.00, NULL),
+-- The Name of the Wind (book_id 4)
 (4, 'th',    350.00,  45),
 (4, 'en',    480.00,  25),
-(4, 'ebook', 169.00, NULL);
-
--- variant_id 12-13: The Fault in Our Stars
-INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(4, 'ebook', 169.00, NULL),
+-- The Fault in Our Stars (book_id 5)
 (5, 'th',    260.00,  60),
-(5, 'ebook', 119.00, NULL);
-
--- variant_id 14-16: Gone Girl
-INSERT INTO book_variants (book_id, type, price, stock) VALUES
+(5, 'ebook', 119.00, NULL),
+-- Gone Girl (book_id 6)
 (6, 'th',    310.00,  35),
 (6, 'en',    430.00,  15),
-(6, 'ebook', 159.00, NULL);
+(6, 'ebook', 159.00, NULL),
+-- Dune (book_id 7)
+(7, 'th',    390.00,  30),
+(7, 'en',    520.00,  20),
+(7, 'ebook', 189.00, NULL),
+-- It (book_id 8)
+(8, 'th',    420.00,  25),
+(8, 'ebook', 179.00, NULL),
+-- The Alchemist (book_id 9)
+(9, 'th',    240.00,  70),
+(9, 'en',    360.00,  40),
+(9, 'ebook', 109.00, NULL),
+-- Norwegian Wood (book_id 10)
+(10, 'th',    290.00,  45),
+(10, 'en',    400.00,  30),
+(10, 'ebook', 139.00, NULL);
 
 -- ── Cart (user1) ────────────────────────────────────────────
 -- สร้างตะกร้าให้ user1 (user_id=2) และเพิ่มสินค้าตัวอย่าง

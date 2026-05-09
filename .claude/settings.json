@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql -u root --password= bababook_db)"
+    ]
+  }
+}

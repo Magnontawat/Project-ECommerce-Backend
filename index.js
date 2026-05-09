@@ -1,19 +1,14 @@
 /**
- * index.js — จุดเริ่มต้นของแอปพลิเคชัน (Entry Point)
+ * index.js — Entry Point
  *
- * ไฟล์นี้ทำหน้าที่:
- *  1. สร้าง Express App
- *  2. ลงทะเบียน Middleware ที่ใช้ร่วมกันทั้งแอป
- *  3. ลงทะเบียน Routes ทั้งหมด
- *  4. เปิดรับ Request บน Port ที่กำหนด
+ * สร้าง Express App, ลงทะเบียน Middleware และ Routes ทั้งหมด
  */
 
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
-require('dotenv').config(); // โหลดค่าจากไฟล์ .env เข้าสู่ process.env
+require('dotenv').config();
 
-// --- Import Routes ---
 const bookRoutes  = require('./routes/bookRoutes');
 const authRoutes  = require('./routes/authRoutes');
 const cartRoutes  = require('./routes/cart');
@@ -21,59 +16,26 @@ const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 
-// ─────────────────────────────────────────────
-// Middleware (ทำงานก่อน Request จะถึง Route)
-// ─────────────────────────────────────────────
-
-/**
- * CORS — Cross-Origin Resource Sharing
- * อนุญาตให้ Frontend (http://localhost:5173) เรียก API นี้ได้
- * ถ้าไม่ตั้งค่านี้ Browser จะบล็อก Request จาก Domain อื่น
- */
+// อนุญาตให้ Frontend (localhost:5173) เรียก API ข้าม Origin ได้
 app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin:      'http://localhost:5173',
+    methods:     ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
 }));
 
-/**
- * express.json() — แปลง Request Body จาก JSON String เป็น JavaScript Object
- * ทำให้ใน Controller เราเข้าถึง req.body ได้เลย เช่น req.body.email
- */
 app.use(express.json());
 
-/**
- * express.static() — Serve ไฟล์ Static (รูปภาพ, CSS, JS)
- * เมื่อมี Request มาที่ /uploads/... จะไปหาไฟล์ใน folder uploads/ ของโปรเจกต์
- * ตัวอย่าง: GET /uploads/covers/cover_123.jpg → อ่านไฟล์จาก ./uploads/covers/cover_123.jpg
- */
+// Serve รูปภาพที่อัพโหลด: GET /uploads/covers/xxx.jpg
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ─────────────────────────────────────────────
-// Routes — แต่ละ Group ของ API Endpoint
-// ─────────────────────────────────────────────
-
-// Endpoint ทุกตัวที่ขึ้นต้นด้วย /api/....
-app.use('/api/books', bookRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/cart', cartRoutes);
+// Routes
+app.use('/api/books',  bookRoutes);
+app.use('/api/auth',   authRoutes);
+app.use('/api/cart',   cartRoutes);
 app.use('/api/orders', orderRoutes);
 
-// ─────────────────────────────────────────────
-// Health Check Endpoint
-// ─────────────────────────────────────────────
-
-// GET / — ใช้ตรวจสอบว่า Server รันอยู่หรือเปล่า
-app.get('/', (req, res) => {
-    res.send('BaBaBook API is running...');
-});
-
-// ─────────────────────────────────────────────
-// Start Server
-// ─────────────────────────────────────────────
+// Health Check
+app.get('/', (req, res) => res.send('BaBaBook API is running...'));
 
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));

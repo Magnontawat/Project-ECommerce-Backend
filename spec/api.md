@@ -24,14 +24,21 @@
   - แก้ validation ใน `bookController.js`: ข้าม stock check เมื่อ `type === "ebook"`
   - ใช้ `v.type === 'ebook' ? (v.stock ?? null) : v.stock` ตอน insert
 
-- [x] **`PUT /api/books/:id` — ยอมรับ `stock: null` สำหรับ ebook**
+- [x] **`PUT /api/books/:id` — ยอมรับ `stock: null` สำหรับ ebook + Smart Upsert variants**
   - แก้ validation เช่นเดียวกับ POST
   - Frontend ส่งเฉพาะ `title`, `author`, `genre`, `variants` (ไม่ส่ง `cover_image`)
-  - variants ที่ส่งมาจะ **ลบ variants เดิมทั้งหมด** แล้วแทนด้วยชุดใหม่ (ตาม spec เดิม)
+  - variants: เปลี่ยนจาก "ลบทิ้งแล้ว insert ใหม่" เป็น Smart Upsert (UPDATE/INSERT/DELETE เฉพาะที่จำเป็น)
+  - ห้ามลบ variant ที่มี order อ้างอิง → return `409 Conflict`
+
+- [x] **`DELETE /api/books/:id` — Soft Delete**
+  - เปลี่ยนจาก hard delete เป็น `UPDATE books SET is_active = 0`
+  - หนังสือที่ถูกลบจะไม่ปรากฏใน GET /api/books และ GET /api/books/:id อีกต่อไป
+  - ข้อมูล order history ยังอยู่ครบ (ไม่มีข้อมูลหายจริง)
+  - เหตุผล: `order_items.variant_id` มี ON DELETE RESTRICT → ลบจริงไม่ได้ถ้ามี order อ้างอิง
 
 ---
 
-### 🚀 API — Endpoint ใหม่ที่สร้างเพิ่ม
+### 🚀 API — Endpoint ใหม่ที่ต้องสร้าง (Planned)
 
 - [x] **`GET /api/cart`** — ดึงรายการสินค้าในตะกร้าของ user ที่ login อยู่
   - Auth: Bearer Token (User)
@@ -71,6 +78,11 @@
 | 6 | `/api/books` | POST | Admin |
 | 7 | `/api/books/:id` | PUT | Admin |
 | 8 | `/api/books/:id` | DELETE | Admin |
+
+### ✅ Implemented (เพิ่มเติม)
+
+| # | Endpoint | Method | Auth |
+|---|---|---|---|
 | 9 | `/api/cart` | GET | User |
 | 10 | `/api/cart/items/:id` | DELETE | User |
 | 11 | `/api/cart/items/:id` | PUT | User |
@@ -105,6 +117,8 @@
 - **URL:** `GET /api/books`
 - **Auth:** ไม่ต้องการ
 
+> **หมายเหตุ:** เฉพาะหนังสือที่ `is_active = 1` เท่านั้น — หนังสือที่ถูก Soft Delete แล้วจะไม่ปรากฏ
+
 > **Frontend Usage:**
 > - `HomePage` — แสดงรายการหนังสือทั้งหมดสำหรับผู้ใช้ทั่วไป
 > - `ManageProductsPage` (`/admin/manage-products`) — Admin ใช้ endpoint เดียวกันนี้เพื่อดึงข้อมูลสินค้าทั้งหมดมาแสดงในตารางจัดการ (Auth ไม่จำเป็นฝั่ง API แต่ route ถูก Guard ด้วย `ProtectedRoute role="admin"`)
@@ -127,8 +141,8 @@
     "cover_image_url": "http://localhost:5000/uploads/covers/cover_1715000000000.jpg",
     "created_at": "2026-01-01T00:00:00.000Z",
     "variants": [
-      { "id": 1, "book_id": 1, "type": "th",    "price": "320.00", "stock": 50   },
-      { "id": 2, "book_id": 1, "type": "en",    "price": "450.00", "stock": 30   },
+      { "id": 1, "book_id": 1, "type": "th",    "price": "320.00", "stock": 50  },
+      { "id": 2, "book_id": 1, "type": "en",    "price": "450.00", "stock": 30  },
       { "id": 3, "book_id": 1, "type": "ebook", "price": "149.00", "stock": null }
     ]
   }
@@ -152,6 +166,8 @@
 - **URL:** `GET /api/books/:id`
 - **Auth:** ไม่ต้องการ
 
+> **หมายเหตุ:** หนังสือที่ถูก Soft Delete (`is_active = 0`) จะ return `404` เหมือนไม่มีอยู่ในระบบ
+
 ### Request
 - **URL Parameter:** `id` (number) — ID ของหนังสือ
 
@@ -169,8 +185,8 @@
   "cover_image_url": "http://localhost:5000/uploads/covers/cover_1715000000000.jpg",
   "created_at": "2026-01-01T00:00:00.000Z",
   "variants": [
-    { "id": 1, "book_id": 1, "type": "th",    "price": "320.00", "stock": 50   },
-    { "id": 2, "book_id": 1, "type": "en",    "price": "450.00", "stock": 30   },
+    { "id": 1, "book_id": 1, "type": "th",    "price": "320.00", "stock": 50  },
+    { "id": 2, "book_id": 1, "type": "en",    "price": "450.00", "stock": 30  },
     { "id": 3, "book_id": 1, "type": "ebook", "price": "149.00", "stock": null }
   ]
 }
@@ -382,9 +398,9 @@
     "cover_image_url": "http://localhost:5000/uploads/covers/cover_1715000000000.jpg",
     "created_at": "2026-01-01T00:00:00.000Z",
     "variants": [
-      { "id": 10, "book_id": 4, "type": "th",    "price": "320.00", "stock": 50   },
-      { "id": 11, "book_id": 4, "type": "en",    "price": "450.00", "stock": 30   },
-      { "id": 12, "book_id": 4, "type": "ebook", "price": "149.00", "stock": null }
+      { "id": 10, "book_id": 4, "type": "th",    "price": "320.00", "stock": 50  },
+      { "id": 11, "book_id": 4, "type": "en",    "price": "450.00", "stock": 30  },
+      { "id": 12, "book_id": 4, "type": "ebook", "price": "149.00", "stock": 999 }
     ]
   }
 }
@@ -429,7 +445,7 @@
 | `publisher` | string | ชื่อสำนักพิมพ์ |
 | `publish_year` | number | ปีที่พิมพ์ |
 | `synopsis` | string | เรื่องย่อ |
-| `variants` | string (JSON) | ถ้าส่งมา จะ **ลบ Variants เดิมทั้งหมด** แล้วแทนด้วยชุดใหม่ |
+| `variants` | string (JSON) | ถ้าส่งมา จะ **Smart Upsert** — UPDATE type เดิม / INSERT type ใหม่ / DELETE type ที่หายไป (ถ้าไม่มี order อ้างอิง) |
 | `cover_image` | file | ถ้าส่งมา จะแทนที่รูปเดิม |
 
 ### ตัวอย่าง Request จาก ManageProductsPage (Inline Edit)
@@ -463,7 +479,7 @@ formData.append('variants', JSON.stringify([
     "cover_image_url": "http://localhost:5000/uploads/covers/cover_1715000000001.jpg",
     "created_at": "2026-01-01T00:00:00.000Z",
     "variants": [
-      { "id": 13, "book_id": 1, "type": "th", "price": "350.00", "stock": 45   }
+      { "id": 13, "book_id": 1, "type": "th", "price": "350.00", "stock": 45 }
     ]
   }
 }
@@ -475,6 +491,7 @@ formData.append('variants', JSON.stringify([
 |---|---|---|
 | `404` | ไม่พบหนังสือ ID นั้น | `"ไม่พบหนังสือที่ต้องการแก้ไข"` |
 | `400` | `variants` ไม่ใช่ JSON ที่ถูกต้อง | `"รูปแบบ variants ไม่ถูกต้อง"` |
+| `409` | พยายามลบ variant ที่มี order อ้างอิงอยู่ | `"ไม่สามารถลบ variant \"ebook\" ได้ เนื่องจากมีคำสั่งซื้อที่อ้างอิงอยู่"` |
 | `401` | ไม่มี Token / Token ไม่ถูกต้อง | `"ไม่ได้รับอนุญาต"` |
 | `403` | ไม่ใช่ Admin | `"ไม่มีสิทธิ์เข้าถึง"` |
 | `500` | Server Error | `"เกิดข้อผิดพลาดในการแก้ไขข้อมูลหนังสือ"` |
@@ -483,10 +500,13 @@ formData.append('variants', JSON.stringify([
 
 ## 8. Delete Book (Admin) ✅
 
-ลบหนังสือและ Variants ทั้งหมดออกจากระบบ
+ซ่อนหนังสือออกจาก catalog (Soft Delete — ข้อมูลไม่ถูกลบออกจาก DB จริง)
 
 - **URL:** `DELETE /api/books/:id`
 - **Auth:** `Bearer <token>` (Admin Token)
+
+> **Soft Delete:** ตั้งค่า `is_active = 0` แทนการ DELETE จริง เพื่อรักษา order history ไว้  
+> หนังสือที่ถูกลบจะไม่ปรากฏใน GET /api/books และ GET /api/books/:id อีกต่อไป
 
 > **Frontend UX:**  
 > `ManageProductsPage` มี confirm dialog 2 ขั้นตอนก่อนลบจริง (กด "ลบ" → ขึ้น "ยืนยันลบหนังสือเล่มนี้?" → กด "ยืนยันลบ" → ถึงจะเรียก API)
@@ -504,7 +524,7 @@ formData.append('variants', JSON.stringify([
 
 | Status | กรณี | Message |
 |---|---|---|
-| `404` | ไม่พบหนังสือ ID นั้น | `"ไม่พบหนังสือที่ต้องการลบ"` |
+| `404` | ไม่พบหนังสือ ID นั้น (หรือถูกลบไปแล้ว) | `"ไม่พบหนังสือที่ต้องการลบ"` |
 | `401` | ไม่มี Token / Token ไม่ถูกต้อง | `"ไม่ได้รับอนุญาต"` |
 | `403` | ไม่ใช่ Admin | `"ไม่มีสิทธิ์เข้าถึง"` |
 | `500` | Server Error | `"เกิดข้อผิดพลาดในการลบหนังสือ"` |
@@ -550,7 +570,7 @@ formData.append('variants', JSON.stringify([
         "id": 11,
         "type": "ebook",
         "price": "169.00",
-        "stock": null
+        "stock": 999
       },
       "book": {
         "id": 4,
@@ -818,7 +838,7 @@ formData.append('variants', JSON.stringify([
 ## วิธีแนบ Token ใน Header
 
 ```javascript
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('shopter_token');
 
 const response = await fetch('http://localhost:5000/api/cart', {
   method: 'GET',
@@ -861,7 +881,7 @@ const login = async (email, password) => {
   });
   const data = await response.json();
   if (response.ok) {
-    localStorage.setItem('token', data.token);
+    localStorage.setItem('shopter_token', data.token);
     // data.role === "user" หรือ "admin"
   }
 };
@@ -869,25 +889,19 @@ const login = async (email, password) => {
 
 **ดึงตะกร้า:**
 ```javascript
-const fetchCart = async (token) => {
-  const response = await fetch('http://localhost:5000/api/cart', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  const data = await response.json();
-  // data.items คือ array ของสินค้าในตะกร้า พร้อม book+variant info
-};
+// ในโปรเจกต์นี้ ใช้ api instance จาก api.js แทน — interceptor แนบ token ให้อัตโนมัติ
+const fetchCart = async () => {
+  const response = await api.get('/cart')
+  // response.data.items คือ array ของสินค้าในตะกร้า พร้อม book+variant info
+}
 ```
 
 **Checkout:**
 ```javascript
-const checkout = async (token) => {
-  const response = await fetch('http://localhost:5000/api/orders', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  const data = await response.json();
-  // data.order คือ order ที่เพิ่งสร้าง พร้อม items ครบถ้วน
-};
+const checkout = async () => {
+  const response = await api.post('/orders')
+  // response.data.order คือ order ที่เพิ่งสร้าง พร้อม items ครบถ้วน
+}
 ```
 
 **เพิ่มหนังสือใหม่ (Admin — multipart/form-data):**

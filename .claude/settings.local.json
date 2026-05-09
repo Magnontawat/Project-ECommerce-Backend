@@ -11,7 +11,9 @@
       "Bash(curl -s -X POST http://localhost:5000/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@example.com\",\"password\":\"password123\"}')",
       "Bash(Get-Content \"c:\\\\Users\\\\USER\\\\Desktop\\\\Project-ECommerce-Backend\\\\database\\\\init.sql\")",
       "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root 2>&1)",
-      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT id, book_id, type, price, stock FROM bababook_db.book_variants ORDER BY id;\" 2>&1)"
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"SELECT id, book_id, type, price, stock FROM bababook_db.book_variants ORDER BY id;\" 2>&1)",
+      "Bash(curl -s http://localhost:5000/api/books/3)",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\('book:', d.title\\); d.variants.forEach\\(v=>console.log\\(' variant_id:', v.id, 'type:', v.type, 'price:', v.price\\)\\)\")"
     ]
   }
 }
