@@ -1,0 +1,21 @@
+/**
+ * config/cloudinary.js — เชื่อมต่อ Cloudinary สำหรับจัดเก็บรูปภาพปกหนังสือ
+ *
+ * Cloudinary คืออะไร?
+ *   บริการ Cloud สำหรับจัดเก็บและจัดการรูปภาพ/วิดีโอ
+ *   แทนที่การบันทึกรูปลง Disk ของ Server ซึ่งจะหายไปเมื่อ Deploy ใหม่
+ *   รูปที่ Upload จะได้ URL ถาวรที่เข้าถึงได้จากทุกที่
+ *
+ * Environment Variables ที่ต้องมีใน .env:
+ *   CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+ */
+
+const cloudinary = require('cloudinary').v2
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+module.exports = cloudinary
