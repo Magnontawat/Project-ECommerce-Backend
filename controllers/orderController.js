@@ -183,4 +183,67 @@ const getOrderById = async (req, res) => {
     }
 };
 
-module.exports = { createOrder, getOrders, getOrderById };
+// ─── Admin: Get All Orders ────────────────────────────────────────────────────
+
+/**
+ * @route  GET /api/orders/admin
+ * @access Admin
+ *
+ * ดึง order ทั้งหมดในระบบพร้อม username ของผู้สั่ง
+ * เรียงจากใหม่ไปเก่า
+ */
+const adminGetOrders = async (req, res) => {
+    try {
+        const [orders] = await db.query(
+            `SELECT o.id, o.status, o.total_price, o.created_at,
+                    COUNT(oi.id) AS item_count,
+                    u.username, u.email
+             FROM orders o
+             LEFT JOIN order_items oi ON oi.order_id = o.id
+             JOIN users u ON u.id = o.user_id
+             GROUP BY o.id, u.username, u.email
+             ORDER BY o.created_at DESC`
+        );
+        res.status(200).json(orders);
+    } catch (error) {
+        console.error('Admin get orders error:', error);
+        res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลคำสั่งซื้อ' });
+    }
+};
+
+// ─── Admin: Update Order Status ───────────────────────────────────────────────
+
+/**
+ * @route  PUT /api/orders/admin/:id/status
+ * @access Admin
+ *
+ * เปลี่ยน status ของ order ใดก็ได้ในระบบ
+ * รับ body: { status: 'pending' | 'paid' | 'cancelled' }
+ */
+const adminUpdateOrderStatus = async (req, res) => {
+    const orderId = req.params.id;
+    const { status } = req.body;
+
+    const VALID_STATUSES = ['pending', 'paid', 'cancelled'];
+    if (!VALID_STATUSES.includes(status)) {
+        return res.status(400).json({ message: 'สถานะไม่ถูกต้อง' });
+    }
+
+    try {
+        const [result] = await db.query(
+            'UPDATE orders SET status = ? WHERE id = ?',
+            [status, orderId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'ไม่พบคำสั่งซื้อ' });
+        }
+
+        res.status(200).json({ message: 'อัปเดตสถานะสำเร็จ', orderId: Number(orderId), status });
+    } catch (error) {
+        console.error('Admin update order status error:', error);
+        res.status(500).json({ message: 'เกิดข้อผิดพลาดในการอัปเดตสถานะ' });
+    }
+};
+
+module.exports = { createOrder, getOrders, getOrderById, adminGetOrders, adminUpdateOrderStatus };

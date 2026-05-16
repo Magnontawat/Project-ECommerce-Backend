@@ -29,13 +29,13 @@ class CartService {
      * เพิ่ม Variant ลงตะกร้า
      * ถ้า Variant นี้อยู่ในตะกร้าแล้ว → บวกจำนวนเพิ่ม (ไม่สร้างแถวใหม่)
      *
-     * @param {number} userId
-     * @param {number} variantId  — ID ของ book_variants (ไม่ใช่ book ID)
-     * @param {number} quantity
+     * รับ object เพื่อให้ call site อ่านออกว่าแต่ละ arg คืออะไร
+     * เช่น CartService.addToCart({ userId, variantId, quantity })
+     *
+     * @param {{ userId: number, variantId: number, quantity?: number }}
      */
-    static async addToCart(userId, variantId, quantity = 1) {
-        const cart   = await this.getOrCreateCart(userId);
-        const cartId = cart.id;
+    static async addToCart({ userId, variantId, quantity = 1 }) {
+        const { id: cartId } = await this.getOrCreateCart(userId);
 
         const [existingItems] = await db.query(
             'SELECT * FROM cart_items WHERE cart_id = ? AND variant_id = ?',

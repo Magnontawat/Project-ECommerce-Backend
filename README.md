@@ -34,7 +34,8 @@ Project-ECommerce-Backend/
 ├── controllers/              ← รับ Request → ประมวลผล → ส่ง Response
 │   ├── authController.js     ← Register / Login
 │   ├── bookController.js     ← CRUD หนังสือ
-│   └── cartController.js     ← ตะกร้าสินค้า
+│   ├── cartController.js     ← ตะกร้าสินค้า
+│   └── orderController.js    ← คำสั่งซื้อ (User + Admin)
 │
 ├── middleware/               ← ทำงานก่อนถึง Controller
 │   ├── authMiddleware.js     ← ตรวจ JWT Token และ Admin Role
@@ -43,18 +44,21 @@ Project-ECommerce-Backend/
 ├── routes/                   ← กำหนด URL ของแต่ละ Endpoint
 │   ├── authRoutes.js         ← /api/auth/*
 │   ├── bookRoutes.js         ← /api/books/*
-│   └── cart.js               ← /api/cart/*
+│   ├── cart.js               ← /api/cart/*
+│   └── orderRoutes.js        ← /api/orders/*
 │
 ├── services/
 │   └── cartService.js        ← Business Logic ของ Cart
 │
 ├── database/
-│   └── init.sql              ← สร้างตาราง + Seed Data (รันครั้งแรก)
+│   └── init.sql              ← สร้างตาราง + Seed Data (รันครั้งแรกหรือรีเซ็ต)
+│
+├── spec/
+│   └── api.md                ← API Spec ครบถ้วน (Request/Response ทุก Endpoint)
 │
 ├── uploads/
 │   └── covers/               ← เก็บไฟล์รูปปกหนังสือที่อัพโหลด
 │
-├── seed.js                   ← Script รีเซ็ตข้อมูลตัวอย่าง
 ├── .env                      ← Environment Variables (ไม่ commit ขึ้น Git)
 ├── .gitignore
 └── package.json
@@ -97,6 +101,8 @@ mysql -u root -p < database/init.sql
 
 คำสั่งนี้จะสร้างตารางทั้งหมดและใส่ข้อมูลตัวอย่างให้พร้อมใช้
 
+> หรือทำผ่าน phpMyAdmin: เลือก Import → เลือกไฟล์ `database/init.sql` → Go
+
 ### 5. รัน Server
 
 ```bash
@@ -127,15 +133,28 @@ Base URL: `http://localhost:5000`
 | GET | `/api/books/:id` | ❌ | ดึงหนังสือตาม ID |
 | POST | `/api/books` | ✅ Admin | เพิ่มหนังสือใหม่ |
 | PUT | `/api/books/:id` | ✅ Admin | แก้ไขหนังสือ |
-| DELETE | `/api/books/:id` | ✅ Admin | ลบหนังสือ |
+| DELETE | `/api/books/:id` | ✅ Admin | ลบหนังสือ (Soft Delete) |
 
-> รายละเอียด Request/Response ทั้งหมดอยู่ใน [api.md](api.md)
-
-### Cart (อยู่ระหว่างพัฒนา)
+### Cart
 
 | Method | Endpoint | Auth | คำอธิบาย |
 |---|---|---|---|
+| GET | `/api/cart` | ✅ User | ดึงตะกร้าสินค้า |
 | POST | `/api/cart/add` | ✅ User | เพิ่มสินค้าลงตะกร้า |
+| PUT | `/api/cart/items/:id` | ✅ User | เปลี่ยนจำนวนสินค้า |
+| DELETE | `/api/cart/items/:id` | ✅ User | ลบสินค้าออกจากตะกร้า |
+
+### Orders
+
+| Method | Endpoint | Auth | คำอธิบาย |
+|---|---|---|---|
+| POST | `/api/orders` | ✅ User | สร้างคำสั่งซื้อ (Checkout) |
+| GET | `/api/orders` | ✅ User | ดูประวัติคำสั่งซื้อของตัวเอง |
+| GET | `/api/orders/:id` | ✅ User | ดูรายละเอียดคำสั่งซื้อ |
+| GET | `/api/orders/admin` | ✅ Admin | ดูคำสั่งซื้อทั้งหมดในระบบ |
+| PUT | `/api/orders/admin/:id/status` | ✅ Admin | เปลี่ยนสถานะคำสั่งซื้อ |
+
+> รายละเอียด Request/Response ทั้งหมดอยู่ใน [spec/api.md](spec/api.md)
 
 ---
 
@@ -149,17 +168,22 @@ Base URL: `http://localhost:5000`
 | admin@example.com | password123 | admin |
 | user1@example.com | password123 | user |
 
-**Books:** 3 เล่ม (The Weight of Ink, A Little Life, Pachinko)
+**Books:** 10 เล่ม (The Weight of Ink, A Little Life, Pachinko, The Name of the Wind, The Fault in Our Stars, Gone Girl, Dune, It, The Alchemist, Norwegian Wood)
+
+**Cart ของ user1:** มีสินค้าตัวอย่าง 2 รายการพร้อมทดสอบ  
+**Order ของ user1:** มีประวัติคำสั่งซื้อ 1 รายการ (status: paid)
 
 ---
 
 ## การรีเซ็ตข้อมูลตัวอย่าง
 
-ถ้าต้องการรีเซ็ตข้อมูลกลับไปเป็นค่าเริ่มต้น:
+ถ้าต้องการรีเซ็ตฐานข้อมูลกลับไปเป็นค่าเริ่มต้น ให้ import `init.sql` ใหม่:
 
 ```bash
-node seed.js
+mysql -u root -p < database/init.sql
 ```
+
+> ⚠️ คำเตือน: คำสั่งนี้จะลบข้อมูลทั้งหมดแล้วสร้างใหม่
 
 ---
 

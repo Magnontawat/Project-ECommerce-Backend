@@ -51,8 +51,8 @@ const registerUser = async (req, res) => {
             [email, username, hashedPassword, 'user', 1]
         );
 
-        const newUserId = result.insertId; //ดึง id ของ user ที่เพิ่งสร้างมาใช้ในการสร้าง token และตอบกลับไปยัง client
-        
+        const newUserId = result.insertId;
+
         res.status(201).json({
             id:       newUserId,
             email,
@@ -89,10 +89,10 @@ const loginUser = async (req, res) => {
             return res.status(404).json({ message: 'ไม่พบบัญชีผู้ใช้นี้' });
         }
     
-        const user = users[0]; //ตอบกลับมาเป็น array เสมอ ให้ดึง index 0 มาใช้งาน
- 
-        const isPasswordCorrect = await bcrypt.compare(password, user.password);  //คำตอบคือ boolean
-        
+        const user = users[0];
+
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
         if (!isPasswordCorrect) {
             return res.status(401).json({ message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
         }

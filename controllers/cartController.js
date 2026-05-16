@@ -25,7 +25,7 @@ const addToCart = async (req, res) => {
     }
 
     try {
-        const result = await CartService.addToCart(userId, variantId, quantity || 1);
+        const result = await CartService.addToCart({ userId, variantId, quantity: quantity || 1 });
         res.status(200).json(result);
     } catch (error) {
         console.error('Add to cart error:', error);
