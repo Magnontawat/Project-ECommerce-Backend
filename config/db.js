@@ -15,8 +15,10 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
 
     waitForConnections: true,
-    connectionLimit: 3,
-    queueLimit: 0,
+    connectionLimit: 2,   // hosting limit = 5, serverless spawn หลาย instance พร้อมกันได้
+    queueLimit: 10,       // queue request แทนที่จะ reject ทันทีเมื่อ connection เต็ม
+    idleTimeout: 60000,   // คืน connection กลับ pool หลังไม่ได้ใช้ 60s
+    connectTimeout: 10000,
 });
 
 // ทดสอบการเชื่อมต่อตอน Server เริ่มต้น
