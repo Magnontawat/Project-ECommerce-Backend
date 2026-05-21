@@ -5,21 +5,21 @@
  */
 
 const express = require('express');
-const cors    = require('cors');
-const path    = require('path');
+const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
-const bookRoutes  = require('./routes/bookRoutes');
-const authRoutes  = require('./routes/authRoutes');
-const cartRoutes  = require('./routes/cart');
+const bookRoutes = require('./routes/bookRoutes');
+const authRoutes = require('./routes/authRoutes');
+const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 
 // อนุญาตให้ Frontend (localhost:5173) เรียก API ข้าม Origin ได้
 app.use(cors({
-    origin:      'http://localhost:5173',
-    methods:     ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
 }));
 
@@ -29,9 +29,9 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api/books',  bookRoutes);
-app.use('/api/auth',   authRoutes);
-app.use('/api/cart',   cartRoutes);
+app.use('/api/books', bookRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 
 // Health Check
