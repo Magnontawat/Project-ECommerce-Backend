@@ -85,9 +85,15 @@ DB_USER=root
 DB_PASSWORD=
 DB_NAME=bababook_db
 JWT_SECRET=supersecretkeybababook2026
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 ```
 
-> เปลี่ยน `DB_PASSWORD` ให้ตรงกับรหัสผ่าน MySQL ของคุณ
+ปัจจุบันที่ vercel ใช้ 1234
+> - เปลี่ยน `DB_PASSWORD` ให้ตรงกับรหัสผ่าน MySQL ของคุณ 
+> - Cloudinary credentials หาได้จาก [Cloudinary Dashboard](https://cloudinary.com/console) → API Keys
 
 ### 3. เริ่ม MySQL (XAMPP)
 
