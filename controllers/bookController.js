@@ -72,19 +72,36 @@ const deleteFromCloudinary = async (url) => {
  */
 const getBooks = async (req, res) => {
     try {
-        const [books] = await db.query(
+        const [rows] = await db.query(
             `SELECT b.id, b.title, b.author, b.publisher, b.publish_year,
-                    b.genre, b.synopsis, b.cover_image_url, b.created_at
+                    b.genre, b.synopsis, b.cover_image_url, b.created_at,
+                    bv.id AS variant_id, bv.type, bv.price, bv.stock
              FROM books b
+             LEFT JOIN book_variants bv ON bv.book_id = b.id
              WHERE b.is_active = 1
-             ORDER BY b.created_at DESC`
+             ORDER BY b.created_at DESC, FIELD(bv.type, 'th', 'en', 'ebook')`
         );
 
-        const booksWithVariants = await Promise.all(
-            books.map(async (book) => ({ ...book, variants: await getVariants(book.id) }))
-        );
+        const booksMap = new Map();
+        for (const row of rows) {
+            if (!booksMap.has(row.id)) {
+                booksMap.set(row.id, {
+                    id: row.id, title: row.title, author: row.author,
+                    publisher: row.publisher, publish_year: row.publish_year,
+                    genre: row.genre, synopsis: row.synopsis,
+                    cover_image_url: row.cover_image_url, created_at: row.created_at,
+                    variants: [],
+                });
+            }
+            if (row.variant_id) {
+                booksMap.get(row.id).variants.push({
+                    id: row.variant_id, book_id: row.id,
+                    type: row.type, price: row.price, stock: row.stock,
+                });
+            }
+        }
 
-        res.status(200).json(booksWithVariants);
+        res.status(200).json([...booksMap.values()]);
     } catch (error) {
         console.error('Error fetching books:', error);
         res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลหนังสือ' });
@@ -113,7 +130,7 @@ const getBookById = async (req, res) => {
         }
 
         const book    = rows[0];
-        book.variants = await getVariants(book.id);
+        book.variants = await getVariants(id);
 
         res.status(200).json(book);
     } catch (error) {

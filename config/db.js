@@ -21,14 +21,4 @@ const pool = mysql.createPool({
     connectTimeout: 10000,
 });
 
-// ทดสอบการเชื่อมต่อตอน Server เริ่มต้น
-pool.getConnection()
-    .then((connection) => {
-        console.log('✅ เชื่อมต่อฐานข้อมูล MySQL สำเร็จ');
-        connection.release();
-    })
-    .catch((err) => {
-        console.error('❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้:', err.message);
-    });
-
 module.exports = pool;
