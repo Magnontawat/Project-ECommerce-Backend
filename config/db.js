@@ -19,7 +19,7 @@ const pool = mysql.createPool({
     port: process.env.DB_PORT,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-
+    ssl: { rejectUnauthorized: true },
     waitForConnections: true,
     connectionLimit: 2,   // hosting limit = 5, serverless spawn หลาย instance พร้อมกันได้
     queueLimit: 10,       // queue request แทนที่จะ reject ทันทีเมื่อ connection เต็ม
